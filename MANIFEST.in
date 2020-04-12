@@ -1,0 +1,7 @@
+include klipper_dash_renderer/klipper_dash_renderer.min.js
+include klipper_dash_renderer/klipper_dash_renderer.min.js.map
+include klipper_dash_renderer/metadata.json
+include klipper_dash_renderer/package-info.json
+include README.md
+include LICENSE
+include package.json
