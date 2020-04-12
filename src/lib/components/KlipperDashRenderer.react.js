@@ -1,5 +1,6 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
+import * as THREE from "three";
 
 /**
  * ExampleComponent is an example component.
@@ -9,29 +10,32 @@ import PropTypes from 'prop-types';
  * which is editable by the user.
  */
 export default class KlipperDashRenderer extends Component {
-    render() {
-        const {id, label, setProps, value} = this.props;
+    componentDidMount() {
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+        var renderer = new THREE.WebGLRenderer();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        // document.body.appendChild( renderer.domElement );
+        // use ref as a mount point of the Three.js scene instead of the document.body
+        this.mount.appendChild( renderer.domElement );
+        var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+        var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+        var cube = new THREE.Mesh( geometry, material );
+        scene.add( cube );
+        camera.position.z = 5;
+        var animate = function () {
+            requestAnimationFrame( animate );
+            cube.rotation.x += 0.01;
+            cube.rotation.y += 0.01;
+            renderer.render( scene, camera );
+        };
+        animate();
+    } 
 
+    render() {
         return (
-            <div id={id}>
-                ExampleComponent: {label}&nbsp;
-                <input
-                    value={value}
-                    onChange={
-                        /*
-                         * Send the new value to the parent component.
-                         * setProps is a prop that is automatically supplied
-                         * by dash's front-end ("dash-renderer").
-                         * In a Dash app, this will update the component's
-                         * props and send the data back to the Python Dash
-                         * app server if a callback uses the modified prop as
-                         * Input or State.
-                         */
-                        e => setProps({ value: e.target.value })
-                    }
-                />
-            </div>
-        );
+            <div ref={ref => (this.mount = ref)} />
+        )
     }
 }
 

@@ -272,3 +272,10 @@ bh_unicode_properties.cache
 # Sublime-github package stores a github token in this file
 # https://packagecontrol.io/packages/sublime-github
 GitHub.sublime-settings
+
+.vscode/
+
+inst/deps/klipper_dash_renderer.min.js
+inst/deps/klipper_dash_renderer.min.js.map
+klipper_dash_renderer/klipper_dash_renderer.min.js
+klipper_dash_renderer/klipper_dash_renderer.min.js.map
