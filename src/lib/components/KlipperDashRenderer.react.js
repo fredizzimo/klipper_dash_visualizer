@@ -18,15 +18,19 @@ export default class KlipperDashRenderer extends Component {
         // document.body.appendChild( renderer.domElement );
         // use ref as a mount point of the Three.js scene instead of the document.body
         this.mount.appendChild( renderer.domElement );
-        var geometry = new THREE.BoxGeometry( 1, 1, 1 );
-        var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-        var cube = new THREE.Mesh( geometry, material );
-        scene.add( cube );
-        camera.position.z = 5;
+        var material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
+        var vertices = new Float32Array(this.props.vertices);
+        var geometry = new THREE.BufferGeometry()
+        geometry.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
+        var line = new THREE.Line(geometry, material);
+        scene.add(line);
+
+        camera.position.set(0, 0, 300);
+        camera.lookAt(0, 0, 0);
+        camera.up.set(0, 0, 1);
+
         var animate = function () {
             requestAnimationFrame( animate );
-            cube.rotation.x += 0.01;
-            cube.rotation.y += 0.01;
             renderer.render( scene, camera );
         };
         animate();
@@ -47,19 +51,5 @@ KlipperDashRenderer.propTypes = {
      */
     id: PropTypes.string,
 
-    /**
-     * A label that will be printed when this component is rendered.
-     */
-    label: PropTypes.string.isRequired,
-
-    /**
-     * The value displayed in the input.
-     */
-    value: PropTypes.string,
-
-    /**
-     * Dash-assigned callback that should be called to report property changes
-     * to Dash, to make them available for callbacks.
-     */
-    setProps: PropTypes.func
+    vertices: PropTypes.arrayOf(PropTypes.number).isRequired,
 };
