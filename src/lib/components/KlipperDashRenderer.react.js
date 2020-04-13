@@ -32,19 +32,19 @@ export default class KlipperDashRenderer extends Component {
         var domNode = ReactDOM.findDOMNode(this.mount);
         var background_color = tinycolor(window.getComputedStyle(domNode).getPropertyValue("background-color"));
         var buildplate_color = tinycolor(window.getComputedStyle(domNode).getPropertyValue("--buildplate-color"));
-        console.log(background_color.toRgb());
-        console.log(background_color.getAlpha());
         renderer.setClearColor(background_color.toHexString(), background_color.getAlpha());
         this.mount.appendChild( renderer.domElement );
 
         this.add_lines(scene);
         this.add_build_plate(scene, buildplate_color);
 
-        camera.position.set(0, 0, 300);
-        camera.lookAt(0, 0, 0);
+        var d = this.calculate_dimensions()
+        // Note slightly backwards in the y direction, so that the plate as the the right orientation
+        camera.position.set(d.x_mid, d.y_mid-1, d.z_end_pos + 0.5 * d.z_size);
         camera.up.set(0, 0, 1);
 
         var controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(d.x_mid, d.y_mid, 0);
         controls.enableZoom = false;
         controls.update();
         this.setState({
@@ -62,6 +62,39 @@ export default class KlipperDashRenderer extends Component {
         animate();
     } 
 
+    calculate_dimensions=()=> {
+        var x_dim = this.props.printer_dimensions[0];
+        var y_dim = this.props.printer_dimensions[1];
+        var z_dim = this.props.printer_dimensions[2];
+
+        var x_size = x_dim[1] - x_dim[0];
+        var y_size = y_dim[1] - y_dim[0];
+        var z_size = z_dim[1] - z_dim[0];
+        var x_pos = y_dim[0];
+        var y_pos = y_dim[0];
+        var z_pos = z_dim[0];
+        var x_mid = x_pos + x_size / 2;
+        var y_mid = y_pos + y_size / 2;
+        var z_mid = z_pos + z_size / 2;
+        var x_end_pos = x_pos + x_size;
+        var y_end_pos = y_pos + y_size;
+        var z_end_pos = z_pos + z_size;
+        return {
+            x_size,
+            y_size,
+            z_size,
+            y_pos,
+            x_pos,
+            z_pos,
+            x_mid,
+            y_mid,
+            z_mid,
+            x_end_pos,
+            y_end_pos,
+            z_end_pos
+        };
+    }
+
     add_lines=(scene)=> {
         var material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
         var vertices = new Float32Array(this.props.vertices);
@@ -72,19 +105,12 @@ export default class KlipperDashRenderer extends Component {
     }
 
     add_build_plate=(scene, buildplate_color)=> {
-        var x_dim = this.props.printer_dimensions[0];
-        var y_dim = this.props.printer_dimensions[1];
-
-        var x_size = x_dim[1] - x_dim[0];
-        var y_size = y_dim[1] - y_dim[0];
-        var x_pos = y_dim[0];
-        var y_pos = y_dim[0];
-
+        var d = this.calculate_dimensions()
         const thickness = 2
-        var geometry = new THREE.BoxGeometry(x_size, y_size, thickness);
+        var geometry = new THREE.BoxGeometry(d.x_size, d.y_size, thickness);
         var material = new THREE.MeshBasicMaterial({color: buildplate_color.toHexString()});
         var plate = new THREE.Mesh(geometry, material);
-        plate.position.set(x_pos + x_size / 2, y_pos + y_size / 2, -thickness/2);
+        plate.position.set(d.x_mid, d.y_mid, -thickness/2);
         scene.add(plate);
     }
 
