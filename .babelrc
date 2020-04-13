@@ -10,5 +10,10 @@
       "test": {
           "plugins": ["@babel/plugin-proposal-object-rest-spread", "styled-jsx/babel-test"]
       }
-  }
+  },
+  "plugins": [
+  [
+      "@babel/plugin-proposal-class-properties"
+  ]
+]
 }
