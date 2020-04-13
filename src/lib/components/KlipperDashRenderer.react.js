@@ -31,13 +31,14 @@ export default class KlipperDashRenderer extends Component {
         renderer.setSize(this.mount.clientWidth, this.mount.clientHeight);
         var domNode = ReactDOM.findDOMNode(this.mount);
         var background_color = tinycolor(window.getComputedStyle(domNode).getPropertyValue("background-color"));
+        var buildplate_color = tinycolor(window.getComputedStyle(domNode).getPropertyValue("--buildplate-color"));
         console.log(background_color.toRgb());
         console.log(background_color.getAlpha());
-        renderer.setClearColor(background_color.toString("rgb"), background_color.getAlpha());
+        renderer.setClearColor(background_color.toHexString(), background_color.getAlpha());
         this.mount.appendChild( renderer.domElement );
 
         this.add_lines(scene);
-        this.add_build_plate(scene);
+        this.add_build_plate(scene, buildplate_color);
 
         camera.position.set(0, 0, 300);
         camera.lookAt(0, 0, 0);
@@ -70,7 +71,7 @@ export default class KlipperDashRenderer extends Component {
         scene.add(line);
     }
 
-    add_build_plate=(scene)=> {
+    add_build_plate=(scene, buildplate_color)=> {
         var x_dim = this.props.printer_dimensions[0];
         var y_dim = this.props.printer_dimensions[1];
 
@@ -81,7 +82,7 @@ export default class KlipperDashRenderer extends Component {
 
         const thickness = 2
         var geometry = new THREE.BoxGeometry(x_size, y_size, thickness);
-        var material = new THREE.MeshBasicMaterial({color: 0x00ff00});
+        var material = new THREE.MeshBasicMaterial({color: buildplate_color.toHexString()});
         var plate = new THREE.Mesh(geometry, material);
         plate.position.set(x_pos + x_size / 2, y_pos + y_size / 2, -thickness/2);
         scene.add(plate);
