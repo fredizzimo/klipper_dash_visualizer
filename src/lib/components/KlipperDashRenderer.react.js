@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
+import tinycolor from "tinycolor2"
 
 /**
  * ExampleComponent is an example component.
@@ -24,15 +25,18 @@ export default class KlipperDashRenderer extends Component {
     componentDidMount() {
         var scene = new THREE.Scene();
         var camera = new THREE.PerspectiveCamera( 75, this.mount.clientWidth/this.mount.clientHeight, 0.1, 1000 );
-        var renderer = new THREE.WebGLRenderer();
-        renderer.setSize( this.mount.clientWidth, this.mount.clientHeight );
-        // document.body.appendChild( renderer.domElement );
-        // use ref as a mount point of the Three.js scene instead of the document.body
+        var renderer = new THREE.WebGLRenderer({
+             alpha: true
+        });
+        renderer.setSize(this.mount.clientWidth, this.mount.clientHeight);
+        var domNode = ReactDOM.findDOMNode(this.mount);
+        var background_color = tinycolor(window.getComputedStyle(domNode).getPropertyValue("background-color"));
+        renderer.setClearColor(background_color.toRgb(), background_color.getAlpha());
         this.mount.appendChild( renderer.domElement );
         var material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
         var vertices = new Float32Array(this.props.vertices);
         var geometry = new THREE.BufferGeometry()
-        geometry.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
+        geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
         var line = new THREE.Line(geometry, material);
         scene.add(line);
 
