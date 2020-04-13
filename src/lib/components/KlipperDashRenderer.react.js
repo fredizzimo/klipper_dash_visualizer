@@ -31,7 +31,9 @@ export default class KlipperDashRenderer extends Component {
         renderer.setSize(this.mount.clientWidth, this.mount.clientHeight);
         var domNode = ReactDOM.findDOMNode(this.mount);
         var background_color = tinycolor(window.getComputedStyle(domNode).getPropertyValue("background-color"));
-        renderer.setClearColor(background_color.toRgb(), background_color.getAlpha());
+        console.log(background_color.toRgb());
+        console.log(background_color.getAlpha());
+        renderer.setClearColor(background_color.toString("rgb"), background_color.getAlpha());
         this.mount.appendChild( renderer.domElement );
 
         this.add_lines(scene);
