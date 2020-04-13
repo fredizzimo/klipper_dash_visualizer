@@ -280,6 +280,7 @@ inst/deps/klipper_dash_renderer.min.js
 inst/deps/klipper_dash_renderer.min.js.map
 klipper_dash_renderer/klipper_dash_renderer.min.js
 klipper_dash_renderer/klipper_dash_renderer.min.js.map
+klipper_dash_renderer/package-info.json
 R/klipperDashRenderer.R
 klipper_dash_renderer/KlipperDashRenderer.py
 klipper_dash_renderer/metadata.json
