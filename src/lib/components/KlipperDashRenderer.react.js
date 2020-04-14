@@ -105,7 +105,8 @@ export default class KlipperDashRenderer extends Component {
         geometry.setPositions(this.props.vertices);
         var material = new LineMaterial({
             color: 0xFF0000,
-            linewidth: 5, // in pixels
+            worldUnits: true,
+            linewidth: 0.4,
             vertexColors: false,
             dashed: false
 
