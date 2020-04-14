@@ -3,6 +3,9 @@ import PropTypes from 'prop-types';
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 import tinycolor from "tinycolor2"
+import { Line2 } from "./../lines/Line2.js";
+import { LineMaterial } from "./../lines/LineMaterial.js";
+import { LineGeometry } from "./../lines/LineGeometry.js";
 
 /**
  * ExampleComponent is an example component.
@@ -18,7 +21,8 @@ export default class KlipperDashRenderer extends Component {
         this.state = {
             controls: null,
             camera: null,
-            renderer: null
+            renderer: null,
+            line_materials: []
         }
     }
 
@@ -29,6 +33,7 @@ export default class KlipperDashRenderer extends Component {
              alpha: true
         });
         renderer.setSize(this.mount.clientWidth, this.mount.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
         var domNode = ReactDOM.findDOMNode(this.mount);
         var background_color = tinycolor(window.getComputedStyle(domNode).getPropertyValue("background-color"));
         var buildplate_color = tinycolor(window.getComputedStyle(domNode).getPropertyValue("--buildplate-color"));
@@ -96,12 +101,25 @@ export default class KlipperDashRenderer extends Component {
     }
 
     add_lines=(scene)=> {
-        var material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
-        var vertices = new Float32Array(this.props.vertices);
-        var geometry = new THREE.BufferGeometry()
-        geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
-        var line = new THREE.Line(geometry, material);
-        scene.add(line);
+        var geometry = new LineGeometry();
+        geometry.setPositions(this.props.vertices);
+        var material = new LineMaterial({
+            color: 0xFF0000,
+            linewidth: 5, // in pixels
+            vertexColors: false,
+            dashed: false
+
+        });
+        material.resolution.set(this.mount.clientWidth, this.mount.clientHeight); 
+
+        this.setState(prevState => ({
+            line_materials: [...prevState.line_materials, material]
+        }))
+
+        var line = new Line2(geometry, material);
+        line.computeLineDistances();
+        line.scale.set( 1, 1, 1 );
+        scene.add( line );
     }
 
     add_build_plate=(scene, buildplate_color)=> {
@@ -128,6 +146,11 @@ export default class KlipperDashRenderer extends Component {
         camera.aspect = mount.clientWidth / mount.clientHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(mount.clientWidth, mount.clientHeight);
+        var materials = this.state.line_materials;
+        for (let i=0;i<materials.length;i++)
+        {
+            materials[i].resolution.set( window.innerWidth, window.innerHeight );
+        }
     }
 
     render() {
