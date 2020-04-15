@@ -1,6 +1,6 @@
 import {
   Line
-} from '../../../src/Three';
+} from 'three';
 
 import { LineSegmentsGeometry } from './LineSegmentsGeometry';
 

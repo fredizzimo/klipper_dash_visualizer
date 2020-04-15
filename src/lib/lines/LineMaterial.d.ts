@@ -3,7 +3,7 @@ import {
   MaterialParameters,
   ShaderMaterial,
   Vector2
-} from '../../../src/Three';
+} from 'three';
 
 export interface LineMaterialParameters extends MaterialParameters {
   color?: number;

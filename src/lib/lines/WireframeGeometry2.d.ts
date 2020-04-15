@@ -1,7 +1,7 @@
 import {
   BufferGeometry,
   Geometry
-} from '../../../src/Three';
+} from 'three';
 
 import { LineSegmentsGeometry } from './LineSegmentsGeometry';
 

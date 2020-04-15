@@ -1,6 +1,6 @@
 import {
   Mesh,
-} from '../../../src/Three';
+} from 'three';
 
 import { LineMaterial } from './LineMaterial';
 import { LineSegmentsGeometry } from './LineSegmentsGeometry';
