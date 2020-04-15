@@ -114,6 +114,13 @@ export class LineSegmentsGeometry extends InstancedBufferGeometry
 
     }
 
+    setDistances(array: Float32Array) {
+        var instanceDistanceBuffer = new InstancedInterleavedBuffer( array, 2, 1 ); // d0, d1
+
+        this.addAttribute( 'instanceDistanceStart', new InterleavedBufferAttribute( instanceDistanceBuffer, 1, 0 ) ); // d0
+        this.addAttribute( 'instanceDistanceEnd', new InterleavedBufferAttribute( instanceDistanceBuffer, 1, 1 ) ); // d1
+    }
+
     computeBoundingBox() {
 
         var box = new Box3();

@@ -133,7 +133,6 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         }))
 
         var line = new Line2(geometry, material);
-        line.computeLineDistances();
         line.scale.set( 1, 1, 1 );
         scene.add( line );
     }

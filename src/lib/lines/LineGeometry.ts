@@ -3,10 +3,17 @@
  *
  */
 
+import {
+   Vector3,
+} from "three";
 
 import { LineSegmentsGeometry } from "./LineSegmentsGeometry";
 
 export class LineGeometry extends LineSegmentsGeometry {
+
+    points: Float32Array;
+    colors: Float32Array;
+    lineDistances: Float32Array;
 
     constructor() {
 
@@ -35,8 +42,10 @@ export class LineGeometry extends LineSegmentsGeometry {
             points[ 2 * i + 5 ] = array[ i + 5 ];
 
         }
+        this.points = points;
+        super.setPositions.call( this, points );
 
-        LineSegmentsGeometry.prototype.setPositions.call( this, points );
+        this.setLineDistances()
 
         return this;
 
@@ -58,11 +67,33 @@ export class LineGeometry extends LineSegmentsGeometry {
             colors[ 2 * i + 3 ] = array[ i + 3 ];
             colors[ 2 * i + 4 ] = array[ i + 4 ];
             colors[ 2 * i + 5 ] = array[ i + 5 ];
-
         }
+        this.colors = colors;
 
         LineSegmentsGeometry.prototype.setColors.call( this, colors );
 
         return this;
+    }
+
+    private setLineDistances() {
+
+        var start = new Vector3();
+        var end = new Vector3();
+        var points = this.points;
+
+        var lineDistances = new Float32Array(points.length / 3);
+
+        for ( var i = 0, j = 0; i < points.length; i+=6, j += 2 ) {
+
+            start.set(points[i], points[i+1], points[i+2]);
+            end.set(points[i+3], points[i+4], points[i+5]);
+
+            lineDistances[j] = (j == 0) ? 0 : lineDistances[j - 1];
+            lineDistances[j + 1] = lineDistances[j] + start.distanceTo(end);
+        }
+        this.lineDistances = lineDistances;
+
+        super.setDistances(lineDistances);
+
     }
 }
