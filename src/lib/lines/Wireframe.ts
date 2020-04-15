@@ -10,7 +10,7 @@ import {
 	Vector3,
 	BufferAttribute
 } from "three";
-import { LineSegmentsGeometry } from "./LineSegmentsGeometry.js";
+import { LineSegmentsGeometry } from "./LineSegmentsGeometry";
 import { LineMaterial } from "./LineMaterial";
 
 export class Wireframe extends Mesh

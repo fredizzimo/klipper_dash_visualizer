@@ -9,8 +9,6 @@ import {
 	Mesh,
 	Vector3,
 	BufferAttribute,
-	BufferGeometry,
-	Geometry
 } from "three";
 import { LineSegmentsGeometry } from "./LineSegmentsGeometry";
 import { LineMaterial } from "./LineMaterial";

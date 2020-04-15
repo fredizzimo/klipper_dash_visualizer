@@ -8,7 +8,7 @@ import {
 	BufferGeometry,
 	WireframeGeometry
 } from "three";
-import { LineSegmentsGeometry } from "../lines/LineSegmentsGeometry.js";
+import { LineSegmentsGeometry } from "../lines/LineSegmentsGeometry";
 
 export class WireframeGeometry2 extends LineSegmentsGeometry
 {

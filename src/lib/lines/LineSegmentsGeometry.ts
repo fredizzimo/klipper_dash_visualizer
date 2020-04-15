@@ -15,9 +15,6 @@ import {
 	Matrix4,
 	WireframeGeometry,
 	EdgesGeometry,
-	InstancedBufferAttribute,
-	LineSegments,
-	Geometry,
 	BufferAttribute
 } from "three";
 
