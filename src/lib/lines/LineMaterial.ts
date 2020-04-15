@@ -17,10 +17,11 @@ import {
 	ShaderMaterial,
 	UniformsLib,
 	UniformsUtils,
-	Vector2
+	Vector2,
+	MaterialParameters
 } from "three";
 
-UniformsLib.line = {
+let LineUniform = {
 
 	worldUnits: { value: 1 },
 	linewidth: { value: 1 },
@@ -36,7 +37,7 @@ ShaderLib[ 'line' ] = {
 	uniforms: UniformsUtils.merge( [
 		UniformsLib.common,
 		UniformsLib.fog,
-		UniformsLib.line
+		LineUniform
 	] ),
 
 	vertexShader:
@@ -365,183 +366,116 @@ ShaderLib[ 'line' ] = {
 		`
 };
 
-var LineMaterial = function ( parameters ) {
-
-	ShaderMaterial.call( this, {
-
-		type: 'LineMaterial',
-
-		uniforms: UniformsUtils.clone( ShaderLib[ 'line' ].uniforms ),
-
-		vertexShader: ShaderLib[ 'line' ].vertexShader,
-		fragmentShader: ShaderLib[ 'line' ].fragmentShader
-
-	} );
-
-	this.dashed = false;
-
-	Object.defineProperties( this, {
-
-		color: {
-
-			enumerable: true,
-
-			get: function () {
-
-				return this.uniforms.diffuse.value;
-
-			},
-
-			set: function ( value ) {
-
-				this.uniforms.diffuse.value = value;
-
-			}
-
-		},
-
-		worldUnits: {
-
-			enumerable: true,
-
-			get: function () {
-
-				return 'WORLD_UNITS' in this.defines;
-
-			},
-
-			set: function ( value ) {
-
-				if ( value === true ) {
-
-					this.defines.WORLD_UNITS = '';
-
-				} else {
-
-					delete this.defines.WORLD_UNITS;
-
-				}
-
-			}
-
-		},
-
-		linewidth: {
-
-			enumerable: true,
-
-			get: function () {
-
-				return this.uniforms.linewidth.value;
-
-			},
-
-			set: function ( value ) {
-
-				this.uniforms.linewidth.value = value;
-
-			}
-
-		},
-
-		dashScale: {
-
-			enumerable: true,
-
-			get: function () {
-
-				return this.uniforms.dashScale.value;
-
-			},
-
-			set: function ( value ) {
-
-				this.uniforms.dashScale.value = value;
-
-			}
-
-		},
-
-		dashSize: {
-
-			enumerable: true,
-
-			get: function () {
-
-				return this.uniforms.dashSize.value;
-
-			},
-
-			set: function ( value ) {
-
-				this.uniforms.dashSize.value = value;
-
-			}
-
-		},
-
-		gapSize: {
-
-			enumerable: true,
-
-			get: function () {
-
-				return this.uniforms.gapSize.value;
-
-			},
-
-			set: function ( value ) {
-
-				this.uniforms.gapSize.value = value;
-
-			}
-
-		},
-
-		resolution: {
-
-			enumerable: true,
-
-			get: function () {
-
-				return this.uniforms.resolution.value;
-
-			},
-
-			set: function ( value ) {
-
-				this.uniforms.resolution.value.copy( value );
-
-			}
+export interface LineMaterialParameters extends MaterialParameters {
+  color?: number;
+  worldUnits?: boolean;
+  dashed?: boolean;
+  dashScale?: number;
+  dashSize?: number;
+  gapSize?: number;
+  linewidth?: number;
+  resolution?: Vector2;
+}
+
+export class LineMaterial extends ShaderMaterial {
+	dashed: boolean
+	constructor(parameters?: LineMaterialParameters) {
+		super( {
+			uniforms: UniformsUtils.clone( ShaderLib[ 'line' ].uniforms ),
+
+			vertexShader: ShaderLib[ 'line' ].vertexShader,
+			fragmentShader: ShaderLib[ 'line' ].fragmentShader
+
+		} );
+
+		this.dashed = false;
+		this.setValues( parameters );
+	}
+
+	get color () {
+		return this.uniforms.diffuse.value;
+	}
+
+	set color ( value ) {
+		this.uniforms.diffuse.value = value;
+	}
+
+	get worldUnits() {
+		return 'WORLD_UNITS' in this.defines;
+	}
+
+	set worldUnits( value ) {
+		if ( value === true ) {
+
+			this.defines.WORLD_UNITS = '';
+
+		} else {
+
+			delete this.defines.WORLD_UNITS;
 
 		}
+	}
 
-	} );
+	get linewidth() {
+		return this.uniforms.linewidth.value;
+	}
 
-	this.setValues( parameters );
+	set linewidth( value ) {
+		// The base class also defines linewidth, which is set in the constructor
+		// ignore it
+		if ("linewidth" in this.uniforms)
+		{
+			this.uniforms.linewidth.value = value;
+		}
+	}
 
-};
+	get dashScale() {
+		return this.uniforms.dashScale.value;
+	}
 
-LineMaterial.prototype = Object.create( ShaderMaterial.prototype );
-LineMaterial.prototype.constructor = LineMaterial;
-
-LineMaterial.prototype.isLineMaterial = true;
-
-LineMaterial.prototype.copy = function ( source ) {
-
-	ShaderMaterial.prototype.copy.call( this, source );
-
-	this.color.copy( source.color );
-
-	this.linewidth = source.linewidth;
-
-	this.resolution = source.resolution;
-
-	// todo
-
-	return this;
-
-};
+	set dashScale( value ) {
+		this.uniforms.dashScale.value = value;
+	}
 
 
-export { LineMaterial };
+	get dashSize() {
+		return this.uniforms.dashSize.value;
+	}
+
+	set dashSize( value ) {
+		this.uniforms.dashSize.value = value;
+	}
+
+	get gapSize() {
+		return this.uniforms.gapSize.value;
+	}
+
+	set gapSize( value ) {
+		this.uniforms.gapSize.value = value;
+	}
+
+	get resolution() {
+		return this.uniforms.resolution.value;
+	}
+
+	set resolution( value ) {
+		this.uniforms.resolution.value.copy( value );
+	}
+
+	static isLineMaterial = true;
+
+	public copy( source: this ) {
+
+		ShaderMaterial.prototype.copy.call( this, source );
+
+		this.color.copy( source.color );
+
+		this.linewidth = source.linewidth;
+
+		this.resolution = source.resolution;
+
+		// todo
+
+		return this;
+	};
+}

@@ -3,9 +3,9 @@ import ReactDOM from "react-dom"
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 import tinycolor from "tinycolor2"
-import { Line2 } from "../lines/Line2.js";
-import { LineMaterial } from "../lines/LineMaterial.js";
-import { LineGeometry } from "../lines/LineGeometry.js";
+import { Line2 } from "../lines/Line2";
+import { LineMaterial } from "../lines/LineMaterial";
+import { LineGeometry } from "../lines/LineGeometry";
 
 type KlipperDashRendererProps =
 {

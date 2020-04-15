@@ -4,23 +4,20 @@
  */
 
 
-import { LineSegmentsGeometry } from "../lines/LineSegmentsGeometry.js";
+import { LineSegmentsGeometry } from "./LineSegmentsGeometry";
 
-var LineGeometry = function () {
+export class LineGeometry extends LineSegmentsGeometry {
 
-	LineSegmentsGeometry.call( this );
+	constructor() {
 
-	this.type = 'LineGeometry';
+		super();
 
-};
+		this.type = 'LineGeometry';
+	};
 
-LineGeometry.prototype = Object.assign( Object.create( LineSegmentsGeometry.prototype ), {
+	static isLineGeometry = true;
 
-	constructor: LineGeometry,
-
-	isLineGeometry: true,
-
-	setPositions: function ( array ) {
+	public setPositions(array: number[] | Float32Array) {
 
 		// converts [ x1, y1, z1,  x2, y2, z2, ... ] to pairs format
 
@@ -43,9 +40,9 @@ LineGeometry.prototype = Object.assign( Object.create( LineSegmentsGeometry.prot
 
 		return this;
 
-	},
+	}
 
-	setColors: function ( array ) {
+	public setColors(array: number[] | Float32Array) {
 
 		// converts [ r1, g1, b1,  r2, g2, b2, ... ] to pairs format
 
@@ -68,36 +65,13 @@ LineGeometry.prototype = Object.assign( Object.create( LineSegmentsGeometry.prot
 
 		return this;
 
-	},
+	}
 
-	fromLine: function ( line ) {
-
-		var geometry = line.geometry;
-
-		if ( geometry.isGeometry ) {
-
-			this.setPositions( geometry.vertices );
-
-		} else if ( geometry.isBufferGeometry ) {
-
-			this.setPositions( geometry.position.array ); // assumes non-indexed
-
-		}
-
-		// set colors, maybe
-
-		return this;
-
-	},
-
-	copy: function ( /* source */ ) {
+	public copy(source: this) {
 
 		// todo
 
 		return this;
 
 	}
-
-} );
-
-export { LineGeometry };
+}
