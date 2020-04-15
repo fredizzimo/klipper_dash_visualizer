@@ -285,3 +285,4 @@ R/klipperDashRenderer.R
 klipper_dash_renderer/KlipperDashRenderer.py
 klipper_dash_renderer/metadata.json
 man/klipperDashRenderer.Rd
+NAMESPACE
