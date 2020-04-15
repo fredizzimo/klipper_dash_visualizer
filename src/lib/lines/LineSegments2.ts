@@ -59,12 +59,4 @@ export class LineSegments2 extends Mesh
 		geometry.addAttribute( 'instanceDistanceEnd', new InterleavedBufferAttribute( instanceDistanceBuffer, 1, 1 ) ); // d1
 
 	}
-
-	public	copy( source: this) {
-
-		// todo
-
-		return this;
-
-	}
 }

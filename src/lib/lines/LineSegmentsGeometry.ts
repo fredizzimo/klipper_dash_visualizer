@@ -117,54 +117,6 @@ export class LineSegmentsGeometry extends InstancedBufferGeometry
 
 	}
 
-	fromWireframeGeometry(geometry: WireframeGeometry) {
-
-		this.setPositions( geometry.attributes.position.array );
-
-		return this;
-
-	}
-
-	fromEdgesGeometry( geometry: EdgesGeometry ) {
-
-		this.setPositions( geometry.attributes.position.array );
-
-		return this;
-
-	}
-
-	fromMesh( mesh: Mesh ) {
-
-		this.fromWireframeGeometry( new WireframeGeometry( mesh.geometry ) );
-
-		// set colors, maybe
-
-		return this;
-
-	}
-
-	/*
-	fromLineSegements( lineSegments: LineSegments ) {
-
-		var geometry = lineSegments.geometry;
-
-		if ( geometry instanceof Geometry ) {
-
-			this.setPositions( geometry.vertices );
-
-		} else geometry.isBufferGeometry {
-
-			this.setPositions( geometry.position.array ); // assumes non-indexed
-
-		}
-
-		// set colors, maybe
-
-		return this;
-
-	}
-	*/
-
 	computeBoundingBox() {
 
 		var box = new Box3();
@@ -235,25 +187,4 @@ export class LineSegmentsGeometry extends InstancedBufferGeometry
 			}
 		}
 	}
-
-	toJSON() {
-
-		// todo
-	}
-
-	/*
-	clone() {
-
-		// todo
-
-	}
-
-	copy(source: this) {
-
-		// todo
-
-		return this;
-
-	}
-	*/
 }

@@ -20,14 +20,4 @@ export class Line2 extends LineSegments2
 		this.material = material !== undefined ? material : new LineMaterial( { color: Math.random() * 0xffffff } );
 
 	};
-
-	static isLine2 = true;
-
-	public copy(source: this) {
-
-		// todo
-
-		return this;
-
-	}
 }

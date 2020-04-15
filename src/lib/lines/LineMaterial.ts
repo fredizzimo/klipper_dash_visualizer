@@ -461,21 +461,4 @@ export class LineMaterial extends ShaderMaterial {
 	set resolution( value ) {
 		this.uniforms.resolution.value.copy( value );
 	}
-
-	static isLineMaterial = true;
-
-	public copy( source: this ) {
-
-		ShaderMaterial.prototype.copy.call( this, source );
-
-		this.color.copy( source.color );
-
-		this.linewidth = source.linewidth;
-
-		this.resolution = source.resolution;
-
-		// todo
-
-		return this;
-	};
 }

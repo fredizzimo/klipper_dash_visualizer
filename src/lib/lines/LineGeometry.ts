@@ -64,14 +64,5 @@ export class LineGeometry extends LineSegmentsGeometry {
 		LineSegmentsGeometry.prototype.setColors.call( this, colors );
 
 		return this;
-
-	}
-
-	public copy(source: this) {
-
-		// todo
-
-		return this;
-
 	}
 }
