@@ -30,7 +30,7 @@ module.exports = (env, argv) => {
         filename = `${dashLibraryName}.${modeSuffix}.js`;
     }
 
-    const entry = overrides.entry || {main: './src/lib/index.js'};
+    const entry = overrides.entry || {main: './src/lib/index.ts'};
 
     const devtool = overrides.devtool || 'source-map';
 
@@ -75,7 +75,15 @@ module.exports = (env, argv) => {
                         },
                     ],
                 },
+                {
+                    test: /\.tsx?$/,
+                    use: 'ts-loader',
+                    exclude: /node_modules/,
+                },
             ],
+        },
+        resolve: {
+            extensions: [ '.tsx', '.ts', '.js' ],
         },
     }
 };

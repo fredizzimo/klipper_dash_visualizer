@@ -7,6 +7,7 @@ import {
 
 export interface LineMaterialParameters extends MaterialParameters {
   color?: number;
+  worldUnits: boolean;
   dashed?: boolean;
   dashScale?: number;
   dashSize?: number;
@@ -18,6 +19,7 @@ export interface LineMaterialParameters extends MaterialParameters {
 export class LineMaterial extends ShaderMaterial {
   constructor(parameters?: LineMaterialParameters);
   color: Color;
+  worldUnits: boolean;
   dashed: boolean;
   dashScale: number;
   dashSize: number;

@@ -1,21 +1,32 @@
-import React, {Component} from 'react';
-import PropTypes from 'prop-types';
+import React, {Component} from "react";
+import ReactDOM from "react-dom"
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 import tinycolor from "tinycolor2"
-import { Line2 } from "./../lines/Line2.js";
-import { LineMaterial } from "./../lines/LineMaterial.js";
-import { LineGeometry } from "./../lines/LineGeometry.js";
+import { Line2 } from "../lines/Line2.js";
+import { LineMaterial } from "../lines/LineMaterial.js";
+import { LineGeometry } from "../lines/LineGeometry.js";
 
-/**
- * ExampleComponent is an example component.
- * It takes a property, `label`, and
- * displays it.
- * It renders an input with the property `value`
- * which is editable by the user.
- */
-export default class KlipperDashRenderer extends Component {
-    constructor(props) {
+type KlipperDashRendererProps =
+{
+    id?: string;
+    vertices: Float32Array;
+    printer_dimensions: Array<Array<number>>;
+};
+
+type KlipperDashRendererState =
+{
+    controls: OrbitControls;
+    camera: THREE.PerspectiveCamera;
+    renderer: THREE.Renderer;
+    line_materials: Array<LineMaterial>;
+};
+
+export default class KlipperDashRenderer extends Component<KlipperDashRendererProps, KlipperDashRendererState> {
+    static defaultProps = {
+    }
+    private myRef = React.createRef<HTMLDivElement>();
+    constructor(props: KlipperDashRendererProps) {
         super(props)
 
         this.state = {
@@ -28,17 +39,19 @@ export default class KlipperDashRenderer extends Component {
 
     componentDidMount() {
         var scene = new THREE.Scene();
-        var camera = new THREE.PerspectiveCamera( 75, this.mount.clientWidth/this.mount.clientHeight, 0.1, 1000 );
+        var clientWidth = this.myRef.current.clientWidth;
+        var clientHeight = this.myRef.current.clientWidth;
+        var camera = new THREE.PerspectiveCamera( 75, clientWidth/clientHeight, 0.1, 1000 );
         var renderer = new THREE.WebGLRenderer({
              alpha: true
         });
-        renderer.setSize(this.mount.clientWidth, this.mount.clientHeight);
+        renderer.setSize(clientWidth, clientWidth);
         renderer.setPixelRatio(window.devicePixelRatio);
-        var domNode = ReactDOM.findDOMNode(this.mount);
-        var background_color = tinycolor(window.getComputedStyle(domNode).getPropertyValue("background-color"));
-        var buildplate_color = tinycolor(window.getComputedStyle(domNode).getPropertyValue("--buildplate-color"));
+        //var domNode = ReactDOM.findDOMNode<HTMLDivElement>(this.myRef.current);
+        var background_color = tinycolor(window.getComputedStyle(this.myRef.current).getPropertyValue("background-color"));
+        var buildplate_color = tinycolor(window.getComputedStyle(this.myRef.current).getPropertyValue("--buildplate-color"));
         renderer.setClearColor(background_color.toHexString(), background_color.getAlpha());
-        this.mount.appendChild( renderer.domElement );
+        this.myRef.current.appendChild( renderer.domElement );
 
         this.add_lines(scene);
         this.add_build_plate(scene, buildplate_color);
@@ -100,7 +113,7 @@ export default class KlipperDashRenderer extends Component {
         };
     }
 
-    add_lines=(scene)=> {
+    add_lines=(scene: THREE.Scene)=> {
         var geometry = new LineGeometry();
         geometry.setPositions(this.props.vertices);
         var material = new LineMaterial({
@@ -111,7 +124,9 @@ export default class KlipperDashRenderer extends Component {
             dashed: false
 
         });
-        material.resolution.set(this.mount.clientWidth, this.mount.clientHeight); 
+        var clientWidth = this.myRef.current.clientWidth;
+        var clientHeight = this.myRef.current.clientWidth;
+        material.resolution.set(clientWidth, clientHeight); 
 
         this.setState(prevState => ({
             line_materials: [...prevState.line_materials, material]
@@ -123,7 +138,7 @@ export default class KlipperDashRenderer extends Component {
         scene.add( line );
     }
 
-    add_build_plate=(scene, buildplate_color)=> {
+    add_build_plate=(scene: THREE.Scene, buildplate_color: tinycolor.Instance)=> {
         var d = this.calculate_dimensions()
         const thickness = 2
         var geometry = new THREE.BoxGeometry(d.x_size, d.y_size, thickness);
@@ -143,10 +158,11 @@ export default class KlipperDashRenderer extends Component {
     resize=()=> {
         var camera = this.state.camera;
         var renderer = this.state.renderer;
-        var mount = this.mount;
-        camera.aspect = mount.clientWidth / mount.clientHeight;
+        var clientWidth = this.myRef.current.clientWidth;
+        var clientHeight = this.myRef.current.clientWidth;
+        camera.aspect = clientWidth / clientHeight;
         camera.updateProjectionMatrix();
-        renderer.setSize(mount.clientWidth, mount.clientHeight);
+        renderer.setSize(clientWidth, clientHeight);
         var materials = this.state.line_materials;
         for (let i=0;i<materials.length;i++)
         {
@@ -160,20 +176,8 @@ export default class KlipperDashRenderer extends Component {
                 id={this.props.id}
                 onFocus={this.enableControls}
                 onBlur={this.disableControls}
-                ref={ref => (this.mount = ref)}
+                ref={this.myRef}
             />
         )
     }
 }
-
-KlipperDashRenderer.defaultProps = {};
-
-KlipperDashRenderer.propTypes = {
-    /**
-     * The ID used to identify this component in Dash callbacks.
-     */
-    id: PropTypes.string,
-
-    vertices: PropTypes.arrayOf(PropTypes.number).isRequired,
-    printer_dimensions: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)).isRequired
-};
