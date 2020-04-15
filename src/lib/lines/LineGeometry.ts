@@ -7,22 +7,14 @@ import {
    Vector3,
 } from "three";
 
-import { LineSegmentsGeometry } from "./LineSegmentsGeometry";
-
-export class LineGeometry extends LineSegmentsGeometry {
+export class LineGeometry {
 
     points: Float32Array;
     colors: Float32Array;
     lineDistances: Float32Array;
 
     constructor() {
-
-        super();
-
-        this.type = 'LineGeometry';
     };
-
-    static isLineGeometry = true;
 
     public setPositions(array: number[] | Float32Array) {
 
@@ -43,12 +35,7 @@ export class LineGeometry extends LineSegmentsGeometry {
 
         }
         this.points = points;
-        super.setPositions.call( this, points );
-
         this.setLineDistances()
-
-        return this;
-
     }
 
     public setColors(array: number[] | Float32Array) {
@@ -69,10 +56,6 @@ export class LineGeometry extends LineSegmentsGeometry {
             colors[ 2 * i + 5 ] = array[ i + 5 ];
         }
         this.colors = colors;
-
-        LineSegmentsGeometry.prototype.setColors.call( this, colors );
-
-        return this;
     }
 
     private setLineDistances() {
@@ -92,8 +75,5 @@ export class LineGeometry extends LineSegmentsGeometry {
             lineDistances[j + 1] = lineDistances[j] + start.distanceTo(end);
         }
         this.lineDistances = lineDistances;
-
-        super.setDistances(lineDistances);
-
     }
 }

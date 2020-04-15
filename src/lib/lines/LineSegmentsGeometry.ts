@@ -14,6 +14,7 @@ import {
     Matrix4,
     BufferAttribute
 } from "three";
+import { LineGeometry } from "./LineGeometry";
 
 export class LineSegmentsGeometry extends InstancedBufferGeometry
 {
@@ -59,11 +60,15 @@ export class LineSegmentsGeometry extends InstancedBufferGeometry
             this.computeBoundingSphere();
 
         }
-
-        return this;
     }
 
-    setPositions(array: ArrayLike<number>) {
+    setLineGeometry(geometry: LineGeometry) {
+        this.setPositions(geometry.points);
+        this.setColors(geometry.colors);
+        this.setDistances(geometry.lineDistances);
+    }
+
+    private setPositions(array: ArrayLike<number>) {
 
         var lineSegments;
 
@@ -86,12 +91,15 @@ export class LineSegmentsGeometry extends InstancedBufferGeometry
 
         this.computeBoundingBox();
         this.computeBoundingSphere();
-
-        return this;
-
     }
 
-    setColors(array: ArrayLike<number>) {
+    private setColors(array?: ArrayLike<number>) {
+        if (array == null)
+        {
+            this.deleteAttribute("instanceColorStart");
+            this.deleteAttribute("instanceColorEnd");
+            return;
+        }
 
         var colors;
 
@@ -107,14 +115,11 @@ export class LineSegmentsGeometry extends InstancedBufferGeometry
 
         var instanceColorBuffer = new InstancedInterleavedBuffer( colors, 6, 1 ); // rgb, rgb
 
-        this.addAttribute( 'instanceColorStart', new InterleavedBufferAttribute( instanceColorBuffer, 3, 0 ) ); // rgb
-        this.addAttribute( 'instanceColorEnd', new InterleavedBufferAttribute( instanceColorBuffer, 3, 3 ) ); // rgb
-
-        return this;
-
+        this.addAttribute("instanceColorStart", new InterleavedBufferAttribute( instanceColorBuffer, 3, 0 )); // rgb
+        this.addAttribute("instanceColorEnd", new InterleavedBufferAttribute( instanceColorBuffer, 3, 3 )); // rgb
     }
 
-    setDistances(array: Float32Array) {
+    private setDistances(array: Float32Array) {
         var instanceDistanceBuffer = new InstancedInterleavedBuffer( array, 2, 1 ); // d0, d1
 
         this.addAttribute( 'instanceDistanceStart', new InterleavedBufferAttribute( instanceDistanceBuffer, 1, 0 ) ); // d0

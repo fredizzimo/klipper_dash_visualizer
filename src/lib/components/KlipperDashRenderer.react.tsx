@@ -6,6 +6,8 @@ import tinycolor from "tinycolor2"
 import { Line2 } from "../lines/Line2";
 import { LineMaterial } from "../lines/LineMaterial";
 import { LineGeometry } from "../lines/LineGeometry";
+import { Line } from "three";
+import { LineSegmentsGeometry } from "../lines/LineSegmentsGeometry";
 
 type KlipperDashRendererProps =
 {
@@ -116,6 +118,9 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
     add_lines=(scene: THREE.Scene)=> {
         var geometry = new LineGeometry();
         geometry.setPositions(this.props.vertices);
+        var segmentGeometry = new LineSegmentsGeometry()
+        segmentGeometry.setLineGeometry(geometry);
+
         var material = new LineMaterial({
             color: 0xFF0000,
             worldUnits: true,
@@ -132,7 +137,7 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
             line_materials: [...prevState.line_materials, material]
         }))
 
-        var line = new Line2(geometry, material);
+        var line = new Line2(segmentGeometry, material);
         line.scale.set( 1, 1, 1 );
         scene.add( line );
     }
