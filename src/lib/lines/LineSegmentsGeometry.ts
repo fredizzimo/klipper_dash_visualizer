@@ -62,10 +62,31 @@ export class LineSegmentsGeometry extends InstancedBufferGeometry
         }
     }
 
-    setLineGeometry(geometry: LineGeometry) {
-        this.setPositions(geometry.points);
-        this.setColors(geometry.colors);
-        this.setDistances(geometry.lineDistances);
+    setLineGeometry(geometry: LineGeometry, rangeStart = 0, rangeEnd?: number) {
+        var pointBuffer = geometry.points.buffer;
+        var distancesBuffer = geometry.lineDistances.buffer
+
+        if (rangeEnd == null) {
+            rangeEnd = geometry.points.length / 6;
+        }
+        var numElements = rangeEnd-rangeStart
+
+        var points = new Float32Array(pointBuffer,  rangeStart*6*4, numElements*6)
+        this.setPositions(points);
+
+        var distances = new Float32Array(distancesBuffer, rangeStart*2*4, numElements*2)
+        this.setDistances(distances);
+
+        if (geometry.colors != null) 
+        {
+            var colorBuffer = geometry.colors.buffer
+            var colors = new Float32Array(colorBuffer, rangeStart*2*4, numElements*2)
+            this.setColors(colors);
+        }
+        else
+        {
+            this.setColors(null);
+        }
     }
 
     private setPositions(lineSegments: Float32Array) {

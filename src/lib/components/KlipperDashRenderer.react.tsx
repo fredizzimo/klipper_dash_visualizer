@@ -22,6 +22,7 @@ type KlipperDashRendererState =
     camera: THREE.PerspectiveCamera;
     renderer: THREE.Renderer;
     line_materials: Array<LineMaterial>;
+    line_geometry: LineGeometry;
 };
 
 export default class KlipperDashRenderer extends Component<KlipperDashRendererProps, KlipperDashRendererState> {
@@ -35,7 +36,8 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
             controls: null,
             camera: null,
             renderer: null,
-            line_materials: []
+            line_materials: [],
+            line_geometry: null
         }
     }
 
@@ -133,9 +135,10 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         var clientHeight = this.myRef.current.clientWidth;
         material.resolution.set(clientWidth, clientHeight); 
 
-        this.setState(prevState => ({
-            line_materials: [...prevState.line_materials, material]
-        }))
+        this.setState({
+            line_materials: [material],
+            line_geometry: geometry
+        })
 
         var line = new Line2(segmentGeometry, material);
         line.scale.set( 1, 1, 1 );
