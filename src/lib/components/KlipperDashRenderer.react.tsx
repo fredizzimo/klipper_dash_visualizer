@@ -63,12 +63,12 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         var scene = new THREE.Scene();
         this.scene = scene;
         var clientWidth = this.myRef.current.clientWidth;
-        var clientHeight = this.myRef.current.clientWidth;
+        var clientHeight = this.myRef.current.clientHeight;
         var camera = new THREE.PerspectiveCamera( 75, clientWidth/clientHeight, 0.1, 1000 );
         var renderer = new THREE.WebGLRenderer({
              alpha: true
         });
-        renderer.setSize(clientWidth, clientWidth);
+        renderer.setSize(clientWidth, clientHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         //var domNode = ReactDOM.findDOMNode<HTMLDivElement>(this.myRef.current);
         var background_color = tinycolor(window.getComputedStyle(this.myRef.current).getPropertyValue("background-color"));
@@ -162,7 +162,7 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
 
     update_line_resolution() {
         var clientWidth = this.myRef.current.clientWidth;
-        var clientHeight = this.myRef.current.clientWidth;
+        var clientHeight = this.myRef.current.clientHeight;
         this.line_material_normal.resolution.set(clientWidth, clientHeight);
         this.line_material_highlight.resolution.set(clientWidth, clientHeight);
     }
@@ -228,7 +228,7 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         var camera = this.camera;
         var renderer = this.renderer;
         var clientWidth = this.myRef.current.clientWidth;
-        var clientHeight = this.myRef.current.clientWidth;
+        var clientHeight = this.myRef.current.clientHeight;
         camera.aspect = clientWidth / clientHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(clientWidth, clientHeight);
