@@ -10,5 +10,7 @@ export default class KlipperDashRenderer extends Component {
 KlipperDashRenderer.propTypes = {
     id: PropTypes.string,
     vertices: PropTypes.arrayOf(PropTypes.number).isRequired,
-    printer_dimensions: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)).isRequired
+    times: PropTypes.arrayOf(PropTypes.number).isRequired,
+    printer_dimensions: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)).isRequired,
+    selected_time: PropTypes.arrayOf(PropTypes.number)
 };

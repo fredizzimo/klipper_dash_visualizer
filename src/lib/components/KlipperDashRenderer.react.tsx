@@ -13,7 +13,9 @@ type KlipperDashRendererProps =
 {
     id?: string;
     vertices: Float32Array;
+    times: Float32Array;
     printer_dimensions: Array<Array<number>>;
+    selected_time?: Array<number>;
 };
 
 type KlipperDashRendererState =
@@ -37,7 +39,13 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
             camera: null,
             renderer: null,
             line_materials: [],
-            line_geometry: null
+            line_geometry: null,
+        }
+    }
+
+    componentDidUpdate(prevProps: KlipperDashRendererProps, prevState: KlipperDashRendererState) {
+        if (this.props.selected_time != prevProps.selected_time) {
+            console.log("Selected time", this.props.selected_time)
         }
     }
 
