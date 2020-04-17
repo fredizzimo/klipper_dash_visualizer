@@ -92,8 +92,8 @@ export class LineSegmentsGeometry extends InstancedBufferGeometry
     private setPositions(lineSegments: Float32Array) {
         var instanceBuffer = new InstancedInterleavedBuffer(lineSegments, 6, 1); // xyz, xyz
 
-        this.addAttribute("instanceStart", new InterleavedBufferAttribute( instanceBuffer, 3, 0 )); // xyz
-        this.addAttribute("instanceEnd", new InterleavedBufferAttribute( instanceBuffer, 3, 3 )); // xyz
+        this.setAttribute("instanceStart", new InterleavedBufferAttribute( instanceBuffer, 3, 0 )); // xyz
+        this.setAttribute("instanceEnd", new InterleavedBufferAttribute( instanceBuffer, 3, 3 )); // xyz
 
         this.computeBoundingBox();
         this.computeBoundingSphere();
@@ -109,15 +109,15 @@ export class LineSegmentsGeometry extends InstancedBufferGeometry
 
         var instanceColorBuffer = new InstancedInterleavedBuffer( colors, 6, 1 ); // rgb, rgb
 
-        this.addAttribute("instanceColorStart", new InterleavedBufferAttribute(instanceColorBuffer, 3, 0)); // rgb
-        this.addAttribute("instanceColorEnd", new InterleavedBufferAttribute(instanceColorBuffer, 3, 3)); // rgb
+        this.setAttribute("instanceColorStart", new InterleavedBufferAttribute(instanceColorBuffer, 3, 0)); // rgb
+        this.setAttribute("instanceColorEnd", new InterleavedBufferAttribute(instanceColorBuffer, 3, 3)); // rgb
     }
 
     private setDistances(distances: Float32Array) {
         var instanceDistanceBuffer = new InstancedInterleavedBuffer(distances, 2, 1); // d0, d1
 
-        this.addAttribute("instanceDistanceStart", new InterleavedBufferAttribute( instanceDistanceBuffer, 1, 0 )); // d0
-        this.addAttribute("instanceDistanceEnd", new InterleavedBufferAttribute( instanceDistanceBuffer, 1, 1 )); // d1
+        this.setAttribute("instanceDistanceStart", new InterleavedBufferAttribute( instanceDistanceBuffer, 1, 0 )); // d0
+        this.setAttribute("instanceDistanceEnd", new InterleavedBufferAttribute( instanceDistanceBuffer, 1, 1 )); // d1
     }
 
     computeBoundingBox() {

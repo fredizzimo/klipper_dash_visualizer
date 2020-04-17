@@ -6,8 +6,8 @@ import tinycolor from "tinycolor2"
 import { Line2 } from "../lines/Line2";
 import { LineMaterial } from "../lines/LineMaterial";
 import { LineGeometry } from "../lines/LineGeometry";
-import { Line } from "three";
 import { LineSegmentsGeometry } from "../lines/LineSegmentsGeometry";
+import {range_start, range_end} from "../helpers"
 
 type KlipperDashRendererProps =
 {
@@ -20,37 +20,48 @@ type KlipperDashRendererProps =
 
 type KlipperDashRendererState =
 {
-    controls: OrbitControls;
-    camera: THREE.PerspectiveCamera;
-    renderer: THREE.Renderer;
-    line_materials: Array<LineMaterial>;
-    line_geometry: LineGeometry;
 };
 
 export default class KlipperDashRenderer extends Component<KlipperDashRendererProps, KlipperDashRendererState> {
     static defaultProps = {
     }
     private myRef = React.createRef<HTMLDivElement>();
+    private controls: OrbitControls;
+    private camera: THREE.PerspectiveCamera;
+    private renderer: THREE.Renderer;
+    private scene: THREE.Scene;
+    private line_geometry: LineGeometry;
+    private line_material_normal: LineMaterial;
+    private line_material_highlight: LineMaterial;
+    private line_before_highlight: Line2;
+    private line_highlight: Line2;
+    private line_after_highlight: Line2;
+
     constructor(props: KlipperDashRendererProps) {
         super(props)
 
-        this.state = {
-            controls: null,
-            camera: null,
-            renderer: null,
-            line_materials: [],
-            line_geometry: null,
-        }
+        this.controls = null;
+        this.camera = null;
+        this.renderer = null;
+        this. camera = null;
+        this.renderer = null;
+        this.line_material_normal = null;
+        this.line_material_highlight = null;
+        this.line_geometry = null;
+        this.line_before_highlight = null;
+        this.line_highlight = null;
+        this.line_after_highlight = null;
     }
 
     componentDidUpdate(prevProps: KlipperDashRendererProps, prevState: KlipperDashRendererState) {
         if (this.props.selected_time != prevProps.selected_time) {
-            console.log("Selected time", this.props.selected_time)
+            this.update_line_segments()
         }
     }
 
     componentDidMount() {
         var scene = new THREE.Scene();
+        this.scene = scene;
         var clientWidth = this.myRef.current.clientWidth;
         var clientHeight = this.myRef.current.clientWidth;
         var camera = new THREE.PerspectiveCamera( 75, clientWidth/clientHeight, 0.1, 1000 );
@@ -65,7 +76,7 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         renderer.setClearColor(background_color.toHexString(), background_color.getAlpha());
         this.myRef.current.appendChild( renderer.domElement );
 
-        this.add_lines(scene);
+        this.add_lines();
         this.add_build_plate(scene, buildplate_color);
 
         var d = this.calculate_dimensions()
@@ -77,11 +88,9 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         controls.target.set(d.x_mid, d.y_mid, 0);
         controls.enableZoom = false;
         controls.update();
-        this.setState({
-            controls,
-            camera,
-            renderer
-        });
+        this.controls = controls;
+        this.camera = camera;
+        this.renderer = renderer;
         window.addEventListener("resize", this.resize);
 
         var animate = function() {
@@ -125,13 +134,12 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         };
     }
 
-    add_lines=(scene: THREE.Scene)=> {
+    add_lines() {
         var geometry = new LineGeometry();
         geometry.setPositions(this.props.vertices);
-        var segmentGeometry = new LineSegmentsGeometry()
-        segmentGeometry.setLineGeometry(geometry);
+        this.line_geometry = geometry;
 
-        var material = new LineMaterial({
+        this.line_material_normal = new LineMaterial({
             color: 0xFF0000,
             worldUnits: true,
             linewidth: 0.4,
@@ -139,18 +147,64 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
             dashed: false
 
         });
+        this.line_material_highlight = new LineMaterial({
+            color: 0x00FF00,
+            worldUnits: true,
+            linewidth: 0.4,
+            vertexColors: false,
+            dashed: false
+
+        });
+
+        this.update_line_segments()
+        this.update_line_resolution();
+    }
+
+    update_line_resolution() {
         var clientWidth = this.myRef.current.clientWidth;
         var clientHeight = this.myRef.current.clientWidth;
-        material.resolution.set(clientWidth, clientHeight); 
+        this.line_material_normal.resolution.set(clientWidth, clientHeight);
+        this.line_material_highlight.resolution.set(clientWidth, clientHeight);
+    }
 
-        this.setState({
-            line_materials: [material],
-            line_geometry: geometry
-        })
+    update_line_segments() {
+        var g = this.line_geometry;
 
-        var line = new Line2(segmentGeometry, material);
-        line.scale.set( 1, 1, 1 );
-        scene.add( line );
+        var add_line = function(line: Line2, scene: THREE.Scene, material: LineMaterial) {
+            if (line != null) {
+                scene.remove(line)
+                line.geometry.dispose()
+            }
+            let segmentGeometry = new LineSegmentsGeometry()
+            line = new Line2(segmentGeometry, material);
+            line.scale.set(1, 1, 1);
+            scene.add(line);
+            return line;
+        }
+
+        this.line_before_highlight = add_line(
+            this.line_before_highlight, this.scene, this.line_material_normal);
+        this.line_highlight = add_line(
+            this.line_highlight, this.scene, this.line_material_highlight);
+        this.line_after_highlight = add_line(
+            this.line_after_highlight, this.scene, this.line_material_normal);
+        
+        if (this.props.selected_time != null)
+        {
+            let start_time=this.props.selected_time[0];
+            let end_time=this.props.selected_time[1];
+            let start_index = range_start(this.props.times, start_time);
+            let end_index = range_end(this.props.times, end_time);
+            this.line_before_highlight.geometry.setLineGeometry(g, 0, start_index);
+            this.line_highlight.geometry.setLineGeometry(g, start_index, end_index);
+            this.line_after_highlight.geometry.setLineGeometry(g, end_index);
+        }
+        else
+        {
+            this.line_before_highlight.geometry.setLineGeometry(g, 0, 0);
+            this.line_highlight.geometry.setLineGeometry(g);
+            this.line_after_highlight.geometry.setLineGeometry(g, 0, 0);
+        }
     }
 
     add_build_plate=(scene: THREE.Scene, buildplate_color: tinycolor.Instance)=> {
@@ -164,25 +218,21 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
     }
 
     enableControls=()=> {
-        this.state.controls.enableZoom = true;
+        this.controls.enableZoom = true;
     }
     disableControls=()=> {
-        this.state.controls.enableZoom = false;
+        this.controls.enableZoom = false;
     }
 
     resize=()=> {
-        var camera = this.state.camera;
-        var renderer = this.state.renderer;
+        var camera = this.camera;
+        var renderer = this.renderer;
         var clientWidth = this.myRef.current.clientWidth;
         var clientHeight = this.myRef.current.clientWidth;
         camera.aspect = clientWidth / clientHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(clientWidth, clientHeight);
-        var materials = this.state.line_materials;
-        for (let i=0;i<materials.length;i++)
-        {
-            materials[i].resolution.set( window.innerWidth, window.innerHeight );
-        }
+        this.update_line_resolution();
     }
 
     render() {

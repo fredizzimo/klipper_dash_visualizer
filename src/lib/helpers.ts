@@ -1,4 +1,4 @@
-function range_start(array: ArrayLike<number>, value: number)
+export function range_start(array: ArrayLike<number>, value: number)
 {
     var count = array.length;
     var first = 0;
@@ -22,7 +22,7 @@ function range_start(array: ArrayLike<number>, value: number)
     return first < array.length ? first : array.length-1;
 }
 
-function range_end(array: ArrayLike<number>, value: number)
+export function range_end(array: ArrayLike<number>, value: number)
 {
     var count = array.length
     var first = 0;
