@@ -117,7 +117,7 @@ class StandaloneVisualizer(object):
         app.clientside_callback(
             """
             function(relayoutData, fig) {
-                return window.klipper_dash_renderer.zoom_figure_y(fig);
+                return window.klipper_dash_visualizer.zoom_figure_y(fig);
             }
             """,
             Output("steppers", "figure"),
