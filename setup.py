@@ -8,6 +8,11 @@ with open('package.json') as f:
 
 package_name = package["name"].replace(" ", "_").replace("-", "_")
 
+with open('requirements.txt') as f:
+    requirements = f.read()
+    requirements = requirements.replace("[dev]", "")
+    requirements = requirements.splitlines()
+
 setup(
     name=package_name,
     version=package["version"],
@@ -16,7 +21,7 @@ setup(
     include_package_data=True,
     license=package['license'],
     description=package.get('description', package_name),
-    install_requires=[],
+    install_requires=[requirements],
     classifiers = [
         'Framework :: Dash',
     ],    
