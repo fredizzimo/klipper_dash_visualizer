@@ -279,7 +279,7 @@ GitHub.sublime-settings
 inst/
 R/
 man/
-klipper_dash_renderer/
-!klipper_dash_renderer/__init__.py
+klipper_dash_visualizer/**
+!klipper_dash_visualizer/__init__.py
 NAMESPACE
 DESCRIPTION

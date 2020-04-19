@@ -31,12 +31,12 @@ _this_module = _sys.modules[__name__]
 
 _js_dist = [
     {
-        'relative_package_path': 'klipper_dash_renderer.min.js',
+        'relative_package_path': 'klipper_dash_visualizer.min.js',
 
         'namespace': package_name
     },
     {
-        'relative_package_path': 'klipper_dash_renderer.min.js.map',
+        'relative_package_path': 'klipper_dash_visualizer.min.js.map',
 
         'namespace': package_name,
         'dynamic': True

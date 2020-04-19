@@ -1,4 +1,4 @@
-import klipper_dash_renderer
+import klipper_dash_visualizer
 import dash
 from dash.dependencies import Input, Output
 import dash_html_components as html
@@ -6,7 +6,7 @@ import dash_html_components as html
 app = dash.Dash(__name__)
 
 app.layout = html.Div([
-    klipper_dash_renderer.KlipperDashRenderer(
+    klipper_dash_visualizer.KlipperDashRenderer(
         id='input',
         value='my-value',
         label='my-label'

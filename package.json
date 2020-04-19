@@ -1,18 +1,18 @@
 {
-  "name": "klipper_dash_renderer",
+  "name": "klipper_dash_visualizer",
   "version": "0.0.1",
-  "description": "A Klipper serial output rendering plugin for Dash",
+  "description": "A Klipper serial output visualizer plugin for Dash",
   "main": "build/index.js",
   "scripts": {
     "start": "webpack-serve --config ./webpack.serve.config.js --open",
     "validate-init": "python _validate_init.py",
     "prepublishOnly": "npm run validate-init",
     "build:js": "webpack --mode production",
-    "build:py_and_r": "dash-generate-components ./src/lib/components klipper_dash_renderer -p package-info.json --r-prefix ''",
+    "build:py_and_r": "dash-generate-components ./src/lib/components klipper_dash_visualizer -p package-info.json --r-prefix ''",
     "build:py_and_r-activated": "(. venv/bin/activate || venv\\scripts\\activate && npm run build:py_and_r)",
     "build": "npm run build:js && npm run build:py_and_r",
     "build:activated": "npm run build:js && npm run build:py_and_r-activated",
-    "clean": "git clean -xdf build dist inst klipper_dash_renderer man R NAMESPACE DESCRIPTION"
+    "clean": "git clean -xdf build dist inst klipper_dash_visualizer klipper_dash_visualizer.egg-info man R NAMESPACE DESCRIPTION"
   },
   "author": "Fred Sundvik <fsundvik@gmail.com>",
   "license": "MIT",

@@ -9,7 +9,7 @@ import sys
 import importlib
 
 
-components_package = 'klipper_dash_renderer'
+components_package = 'klipper_dash_visualizer'
 
 components_lib = importlib.import_module(components_package)
 
