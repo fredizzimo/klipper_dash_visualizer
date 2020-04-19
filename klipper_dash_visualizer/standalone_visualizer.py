@@ -34,19 +34,19 @@ def graph_steppers(steppers):
         color = DEFAULT_PLOTLY_COLORS[i]
         fig.add_trace(go.Scatter(
             x=stepper.steps[:,0], y=stepper.steps[:,1],
-            name="%s pos" % stepper.mcu._name,
+            name="%s pos" % stepper.name,
             line=go.scatter.Line(color=color),
             yaxis=y1
         ))
         fig.add_trace(go.Scatter(
             x=stepper.steps[:,0], y=stepper.velocity,
-            name="%s vel" % stepper.mcu._name,
+            name="%s vel" % stepper.name,
             line=go.scatter.Line(dash="dash", color=color),
             yaxis=y2
         ))
         fig.add_trace(go.Scatter(
             x=stepper.steps[:,0], y=stepper.acceleration,
-            name="%s acc" % stepper.mcu._name,
+            name="%s acc" % stepper.name,
             line=go.scatter.Line(dash="dot", color=color),
             yaxis=y3
         ))
@@ -81,8 +81,7 @@ def graph_steppers(steppers):
     return fig
 
 class StandaloneVisualizer(object):
-    def __init__(self, steppers, stepper_data, spatial_coordinates,
-            printer_dimensions):
+    def __init__(self, steppers, time, spatial_coordinates, printer_dimensions):
         assets_folder = pkg_resources.resource_filename("klipper_dash_visualizer", "assets")
         app = dash.Dash(
             assets_folder=assets_folder,
@@ -108,7 +107,7 @@ class StandaloneVisualizer(object):
                             id="renderer",
                             vertices=spatial_coordinates,
                             printer_dimensions=printer_dimensions,
-                            times=stepper_data.time
+                            times=time
                         )
                     ]
                 )
