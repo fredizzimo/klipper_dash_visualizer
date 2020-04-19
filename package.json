@@ -11,7 +11,8 @@
     "build:py_and_r": "dash-generate-components ./src/lib/components klipper_dash_renderer -p package-info.json --r-prefix ''",
     "build:py_and_r-activated": "(. venv/bin/activate || venv\\scripts\\activate && npm run build:py_and_r)",
     "build": "npm run build:js && npm run build:py_and_r",
-    "build:activated": "npm run build:js && npm run build:py_and_r-activated"
+    "build:activated": "npm run build:js && npm run build:py_and_r-activated",
+    "clean": "git clean -xdf build dist inst klipper_dash_renderer man R NAMESPACE DESCRIPTION"
   },
   "author": "Fred Sundvik <fsundvik@gmail.com>",
   "license": "MIT",
