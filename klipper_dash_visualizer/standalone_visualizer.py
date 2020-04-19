@@ -1,14 +1,14 @@
+from __future__ import absolute_import
+
 import pkg_resources
-import dash
 import numpy as np
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 from plotly.colors import DEFAULT_PLOTLY_COLORS
-import dash
+from dash import Dash
+from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output, State
-from KlipperDashRenderer import KlipperDashRenderer
+from .KlipperDashRenderer import KlipperDashRenderer
 
 instructions = \
 """
@@ -81,9 +81,9 @@ def graph_steppers(steppers):
     return fig
 
 class StandaloneVisualizer(object):
-    def __init__(self, steppers, time, spatial_coordinates, printer_dimensions):
+    def __init__(self, steppers, times, spatial_coordinates, printer_dimensions):
         assets_folder = pkg_resources.resource_filename("klipper_dash_visualizer", "assets")
-        app = dash.Dash(
+        app = Dash(
             assets_folder=assets_folder,
             include_assets_files=False,
             external_stylesheets= [
@@ -107,7 +107,7 @@ class StandaloneVisualizer(object):
                             id="renderer",
                             vertices=spatial_coordinates,
                             printer_dimensions=printer_dimensions,
-                            times=time
+                            times=times
                         )
                     ]
                 )
