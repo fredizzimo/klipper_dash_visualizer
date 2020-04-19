@@ -56,6 +56,8 @@ def check_file(dist, filename):
 
 for cur, _, files in os.walk(components_package):
     for f in files:
+        if cur.startswith("klipper_dash_visualizer/assets"):
+            continue
 
         if f.endswith('js'):
             # noinspection PyProtectedMember
