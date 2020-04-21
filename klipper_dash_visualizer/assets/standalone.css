@@ -14,12 +14,18 @@ body {
     height: 50px
 }
 
+/*
 #renderer {
     flex: 1;
     flex-direction: column;
     height: 0px;
     background-color: #E5ECF6;
     --buildplate-color: #1f77b4;
+}
+*/
+#renderer {
+    width: 100px;
+    height: 100px;
 }
 
 #renderer > canvas {

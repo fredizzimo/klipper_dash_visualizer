@@ -8,7 +8,7 @@ from dash import Dash
 from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
 import dash_html_components as html
-from .KlipperDashRenderer import KlipperDashRenderer
+from .App import App
 
 instructions = \
 """
@@ -90,31 +90,45 @@ class StandaloneVisualizer(object):
                 "/assets/standalone.css"
             ]
         )
-        graph_tab = dcc.Tab(label="Graphs", children=[
-                dcc.Graph(
-                    id="steppers",
-                    figure=graph_steppers(steppers),
-                ),
-        ])
+        if False:
+            graph_tab = dcc.Tab(label="Graphs", children=[
+                    dcc.Graph(
+                        id="steppers",
+                        figure=graph_steppers(steppers),
+                    ),
+            ])
 
-        render_tab = dcc.Tab(label="3D View", children=[
-                dcc.Markdown(
-                    instructions,
-                    id="renderer_instructions",
-                ),
-                KlipperDashRenderer(
-                    id="renderer",
-                    vertices=spatial_coordinates,
-                    printer_dimensions=printer_dimensions,
-                    times=times
-                )
-        ])
+            render_tab = dcc.Tab(label="3D View", children=[
+                    dcc.Markdown(
+                        instructions,
+                        id="renderer_instructions",
+                    ),
+                    KlipperDashRenderer(
+                        id="renderer",
+                        vertices=spatial_coordinates,
+                        printer_dimensions=printer_dimensions,
+                        times=times
+                    )
+            ])
 
-        app.layout = html.Div(
-            children = [
-                dcc.Tabs(children=[graph_tab, render_tab])
-            ]
-        )
+            app.layout = html.Div(
+                children = [
+                    dcc.Tabs(children=[graph_tab, render_tab])
+                ]
+            )
+        else:
+            app.layout = App(
+                id="app",
+                children = [
+                    dcc.Graph(
+                        id="steppers",
+                        figure=graph_steppers(steppers),
+                    )
+                ],
+                vertices=spatial_coordinates,
+                printer_dimensions=printer_dimensions,
+                times=times
+            )
 
         app.clientside_callback(
             """
@@ -133,7 +147,7 @@ class StandaloneVisualizer(object):
                 return [...fig.layout.xaxis.range];
             }
             """,
-            Output("renderer", "selected_time"),
+            Output("app", "selected_time"),
             [Input("steppers", "relayoutData")],
             [State("steppers", "figure")]
         )
