@@ -25,10 +25,10 @@ type KlipperDashRendererState =
 export default class KlipperDashRenderer extends Component<KlipperDashRendererProps, KlipperDashRendererState> {
     static defaultProps = {
     }
-    private myRef = React.createRef<HTMLDivElement>();
+    private myRef = React.createRef<HTMLCanvasElement>();
     private controls: OrbitControls;
     private camera: THREE.PerspectiveCamera;
-    private renderer: THREE.Renderer;
+    private renderer: THREE.WebGLRenderer;
     private scene: THREE.Scene;
     private line_geometry: LineGeometry;
     private line_material_normal: LineMaterial;
@@ -62,19 +62,16 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
     componentDidMount() {
         var scene = new THREE.Scene();
         this.scene = scene;
-        var clientWidth = this.myRef.current.clientWidth;
-        var clientHeight = this.myRef.current.clientHeight;
-        var camera = new THREE.PerspectiveCamera( 75, clientWidth/clientHeight, 0.1, 1000 );
+        var camera = new THREE.PerspectiveCamera( 75, 2, 0.1, 1000 );
         var renderer = new THREE.WebGLRenderer({
-             alpha: true
+            canvas: this.myRef.current,
+            alpha: true
         });
-        renderer.setSize(clientWidth, clientHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
-        //var domNode = ReactDOM.findDOMNode<HTMLDivElement>(this.myRef.current);
         var background_color = tinycolor(window.getComputedStyle(this.myRef.current).getPropertyValue("background-color"));
         var buildplate_color = tinycolor(window.getComputedStyle(this.myRef.current).getPropertyValue("--buildplate-color"));
         renderer.setClearColor(background_color.toHexString(), background_color.getAlpha());
-        this.myRef.current.appendChild( renderer.domElement );
+        //this.myRef.current.appendChild( renderer.domElement );
 
         this.add_lines();
         this.add_build_plate(scene, buildplate_color);
@@ -91,15 +88,34 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         this.controls = controls;
         this.camera = camera;
         this.renderer = renderer;
-        window.addEventListener("resize", this.resize);
 
-        var animate = function() {
-            requestAnimationFrame(animate);
-            controls.update()
-            renderer.render(scene, camera);
-        };
-        animate();
+        this.animate();
     } 
+
+    animate =()=> {
+        this.resize();
+        requestAnimationFrame(this.animate);
+        this.controls.update()
+        this.renderer.render(this.scene, this.camera);
+    }
+
+    resize() {
+        var camera = this.camera;
+        var renderer = this.renderer;
+        var clientWidth = this.myRef.current.clientWidth;
+        var clientHeight = this.myRef.current.clientHeight;
+        var width = this.myRef.current.width;
+        var height = this.myRef.current.height;
+        var pixelRatio = renderer.getPixelRatio();
+        var pixel_width = Math.floor(clientWidth * pixelRatio);
+        var pixel_height = Math.floor(clientHeight * pixelRatio);
+        if (pixel_width != width || pixel_height != height) {
+            camera.aspect = clientWidth / clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(clientWidth, clientHeight, false);
+            this.update_line_resolution();
+        }
+    }
 
     calculate_dimensions=()=> {
         var x_dim = this.props.printer_dimensions[0];
@@ -224,25 +240,16 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         this.controls.enableZoom = false;
     }
 
-    resize=()=> {
-        var camera = this.camera;
-        var renderer = this.renderer;
-        var clientWidth = this.myRef.current.clientWidth;
-        var clientHeight = this.myRef.current.clientHeight;
-        camera.aspect = clientWidth / clientHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(clientWidth, clientHeight);
-        this.update_line_resolution();
-    }
-
     render() {
         return (
             <div
                 id={this.props.id}
                 onFocus={this.enableControls}
                 onBlur={this.disableControls}
-                ref={this.myRef}
-            />
+            >
+            <canvas
+                ref={this.myRef}/>
+            </div>
         )
     }
 }

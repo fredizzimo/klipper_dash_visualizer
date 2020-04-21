@@ -90,27 +90,29 @@ class StandaloneVisualizer(object):
                 "/assets/standalone.css"
             ]
         )
-        app.layout = html.Div(
-            children = [
+        graph_tab = dcc.Tab(label="Graphs", children=[
                 dcc.Graph(
                     id="steppers",
                     figure=graph_steppers(steppers),
                 ),
-                html.Div(
-                    id="renderer_container",
-                    children=[
-                        dcc.Markdown(
-                            instructions,
-                            id="renderer_instructions",
-                        ),
-                        KlipperDashRenderer(
-                            id="renderer",
-                            vertices=spatial_coordinates,
-                            printer_dimensions=printer_dimensions,
-                            times=times
-                        )
-                    ]
+        ])
+
+        render_tab = dcc.Tab(label="3D View", children=[
+                dcc.Markdown(
+                    instructions,
+                    id="renderer_instructions",
+                ),
+                KlipperDashRenderer(
+                    id="renderer",
+                    vertices=spatial_coordinates,
+                    printer_dimensions=printer_dimensions,
+                    times=times
                 )
+        ])
+
+        app.layout = html.Div(
+            children = [
+                dcc.Tabs(children=[graph_tab, render_tab])
             ]
         )
 
