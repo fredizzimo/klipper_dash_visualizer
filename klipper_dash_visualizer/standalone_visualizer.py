@@ -20,7 +20,11 @@ Click outside to when done
 def graph_steppers(steppers):
     fig = go.Figure()
     layout = {}
-    spacing = 0.01
+    graph_height = 300
+    total_height = graph_height * len(steppers)
+    spacing_pixels = 20.0
+
+    spacing = spacing_pixels / total_height
     domains = list(reversed(np.linspace(0, 1+spacing, len(steppers)+1)))
     y_axis_spacing = 0.03
 
@@ -76,6 +80,9 @@ def graph_steppers(steppers):
         fixedrange=False,
         domain=[y_axis_spacing*3.0,1]
     )
+
+    layout["height"] = total_height
+    layout["margin"] = go.layout.Margin(l=0, r=0, t=30, b=30)
 
     fig.update_layout(layout)
     return fig
