@@ -24,7 +24,7 @@ export default class App extends Component<Props, State> {
 
     render() {
         return (
-            <div>
+            <div id="main">
                 {this.props.children}
                 <KlipperDashRenderer
                     id="renderer"

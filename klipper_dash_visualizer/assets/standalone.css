@@ -4,6 +4,12 @@ body {
     margin: 0px;
 }
 
+#main {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
 #steppers {
 }
 
@@ -24,8 +30,10 @@ body {
 }
 */
 #renderer {
-    width: 100px;
-    height: 100px;
+    flex: 1;
+    width: 100%;
+    background-color: #E5ECF6;
+    --buildplate-color: #1f77b4;
 }
 
 #renderer > canvas {
