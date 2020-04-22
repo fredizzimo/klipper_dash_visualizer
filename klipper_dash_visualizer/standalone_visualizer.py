@@ -90,45 +90,18 @@ class StandaloneVisualizer(object):
                 "/assets/standalone.css"
             ]
         )
-        if False:
-            graph_tab = dcc.Tab(label="Graphs", children=[
-                    dcc.Graph(
-                        id="steppers",
-                        figure=graph_steppers(steppers),
-                    ),
-            ])
-
-            render_tab = dcc.Tab(label="3D View", children=[
-                    dcc.Markdown(
-                        instructions,
-                        id="renderer_instructions",
-                    ),
-                    KlipperDashRenderer(
-                        id="renderer",
-                        vertices=spatial_coordinates,
-                        printer_dimensions=printer_dimensions,
-                        times=times
-                    )
-            ])
-
-            app.layout = html.Div(
-                children = [
-                    dcc.Tabs(children=[graph_tab, render_tab])
-                ]
-            )
-        else:
-            app.layout = App(
-                id="app",
-                children = [
-                    dcc.Graph(
-                        id="steppers",
-                        figure=graph_steppers(steppers),
-                    )
-                ],
-                vertices=spatial_coordinates,
-                printer_dimensions=printer_dimensions,
-                times=times
-            )
+        app.layout = App(
+            id="app",
+            children = [
+                dcc.Graph(
+                    id="steppers",
+                    figure=graph_steppers(steppers),
+                )
+            ],
+            vertices=spatial_coordinates,
+            printer_dimensions=printer_dimensions,
+            times=times
+        )
 
         app.clientside_callback(
             """
