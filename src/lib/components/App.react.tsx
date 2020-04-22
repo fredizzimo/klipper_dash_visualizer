@@ -14,19 +14,25 @@ type Props =
 
 type State =
 {
+    activeTab: string
 };
 
 export default class App extends Component<Props, State> {
-    static defaultProps = {
+    constructor(props: Props) {
+        super(props);
+        this.state = {
+            activeTab: ""
+        }
     }
 
-    costructor() {
+    onTabSelected =(tab: string)=> {
+        this.setState({activeTab: tab})
     }
 
     render() {
         return (
             <div id="main">
-                <Tabs>
+                <Tabs onTabSelected={this.onTabSelected}>
                     <Tab label="Graph">
                         {this.props.children}
                     </Tab>
@@ -37,6 +43,7 @@ export default class App extends Component<Props, State> {
                             times={this.props.times}
                             printer_dimensions={this.props.printer_dimensions}
                             selected_time={this.props.selected_time}
+                            active={this.state.activeTab=="3D View"}
                         />
                     </Tab>
                 </Tabs>

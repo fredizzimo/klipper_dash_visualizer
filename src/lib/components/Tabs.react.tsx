@@ -2,24 +2,31 @@ import React, {Component, Children} from "react";
 
 type TabsProps = {
     children: React.ReactElement<TabProps>[]
+    onTabSelected?: (label: string) => void;
 }
 
 type TabsState = {
-    active_tab: string
+    activeTab: string
 }
 
 export class Tabs extends Component<TabsProps, TabsState> {
     constructor(props: TabsProps) {
         super(props);
-        this.state = {active_tab: this.props.children[0].props.label}
+        this.state = {activeTab: this.props.children[0].props.label}
+        if (this.props.onTabSelected != null) {
+            this.props.onTabSelected(this.state.activeTab);
+        }
     }
     
     selectTab =(label: string) => {
-        this.setState({active_tab: label});
+        this.setState({activeTab: label});
+        if (this.props.onTabSelected != null) {
+            this.props.onTabSelected(label);
+        }
     }
 
     render () {
-        const active_tab = this.state.active_tab;
+        const activeTab = this.state.activeTab;
         return ( 
             <>
             <div className="tab-header">
@@ -28,7 +35,7 @@ export class Tabs extends Component<TabsProps, TabsState> {
                     <TabButton
                         label={child.props.label}
                         onClick={this.selectTab}
-                        active={active_tab == child.props.label}
+                        active={activeTab == child.props.label}
                     >
                         {child.props.children}
                     </TabButton>)
@@ -37,7 +44,7 @@ export class Tabs extends Component<TabsProps, TabsState> {
             <div className="tab-content">
                 {this.props.children.map((child) => {
                     return (
-                        <TabContent active={active_tab == child.props.label}>
+                        <TabContent active={activeTab == child.props.label}>
                             {child.props.children}
                         </TabContent>
                     );

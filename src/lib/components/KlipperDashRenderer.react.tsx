@@ -16,6 +16,7 @@ type KlipperDashRendererProps =
     times: Float32Array;
     printer_dimensions: Array<Array<number>>;
     selected_time?: Array<number>;
+    active: boolean;
 };
 
 type KlipperDashRendererState =
@@ -57,6 +58,9 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         if (this.props.selected_time != prevProps.selected_time) {
             this.update_line_segments()
         }
+        if (this.props.active) {
+            this.myRef.current.focus();
+        }
     }
 
     componentDidMount() {
@@ -83,7 +87,6 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
 
         var controls = new OrbitControls(camera, renderer.domElement);
         controls.target.set(d.x_mid, d.y_mid, 0);
-        controls.enableZoom = false;
         controls.update();
         this.controls = controls;
         this.camera = camera;
@@ -233,19 +236,18 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         scene.add(plate);
     }
 
-    enableControls=()=> {
-        this.controls.enableZoom = true;
-    }
-    disableControls=()=> {
-        this.controls.enableZoom = false;
+    tryToRefocus=()=> {
+        if (this.props.active) {
+            let element = this.myRef.current
+            setTimeout(function () { element.focus(); }, 20);
+        }
     }
 
     render() {
         return (
             <div
                 id={this.props.id}
-                onFocus={this.enableControls}
-                onBlur={this.disableControls}
+                onBlur={this.tryToRefocus}
             >
             <canvas
                 ref={this.myRef}/>

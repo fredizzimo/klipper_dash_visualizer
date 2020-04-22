@@ -24,9 +24,17 @@ body {
     --buildplate-color: #1f77b4;
 }
 
+#renderer:focus {
+    outline: none;
+}
+
 #renderer > canvas {
     height: 100%;
     width: 100%;
+}
+
+#renderer > canvas:focus {
+    outline: none;
 }
 
 .tab-parent {
