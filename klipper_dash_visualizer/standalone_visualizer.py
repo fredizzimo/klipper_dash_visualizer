@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import pkg_resources
+import os
 import numpy as np
 import plotly.graph_objects as go
 from plotly.colors import DEFAULT_PLOTLY_COLORS
@@ -90,6 +91,7 @@ def graph_steppers(steppers):
 class StandaloneVisualizer(object):
     def __init__(self, steppers, times, spatial_coordinates, printer_dimensions):
         assets_folder = pkg_resources.resource_filename("klipper_dash_visualizer", "assets")
+        assets_folder = os.path.abspath(assets_folder)
         app = Dash(
             assets_folder=assets_folder,
             include_assets_files=False,
