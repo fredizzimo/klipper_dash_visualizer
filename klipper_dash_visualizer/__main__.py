@@ -1,7 +1,17 @@
 import sys
 import argparse
 import os
+from standalone_visualizer import StandaloneVisualizer
 
+def run_app(parser):
+    stepper_data = parser.stepper_data
+    spatial_coordinates = parser.get_spatial_coordinates()
+    printer_dimensions = parser.get_printer_dimensions()
+
+    visualizer = StandaloneVisualizer(parser.steppers, stepper_data.time,
+        spatial_coordinates, printer_dimensions)
+
+    visualizer.run(debug=True)
 
 def main():
     parser = argparse.ArgumentParser(description=
@@ -23,12 +33,10 @@ def main():
         print("Klipper not found at %s" % (args.klipper))
         return -1
     sys.path.append(klippy_path)
-    from extras.serial_parser import read_printer_config, parse, run_app
+    from extras.serial_parser import SerialParser
 
-    printer = read_printer_config(args.config)
-    steppers = parse(args.input, args.dict, printer)
-
-    run_app(steppers, printer)
+    parser = SerialParser(args.input, args.config, args.dict)
+    run_app(parser)
 
 
 if __name__ == "__main__":
