@@ -54,8 +54,89 @@ class DataGenerator(object):
     def __init__(self, parser):
         self.parser = parser
         self.steppers = [Stepper(name) for name in parser.get_stepper_names()]
+
         for i, stepper in enumerate(self.steppers):
             steps = np.array(list(parser.get_steps(i, 0)))
             stepper.time = steps[:,0]
             stepper.position = steps[:,1]
             stepper.calculate_velocities_and_accelerations()
+
+        self.times, self.spatial_coordinates = self.generate_spatial_coordinates(parser)
+
+    def generate_spatial_coordinates(self, parser):
+        spatial_steppers = parser.get_spatial_steppers()
+        if len(spatial_steppers):
+            spatial_steppers = [self.steppers[i] for i in spatial_steppers]
+
+            lhs =  spatial_steppers[0]
+            lhs_time = lhs.time
+            lhs_pos = lhs.position
+            lhs_size = lhs.time.shape[0]
+
+            output_size = lhs_size + spatial_steppers[1].time.shape[0]
+            cur_col = 2
+
+            for rhs in spatial_steppers[1:]:
+                output_size = lhs_size + rhs.time.shape[0] 
+                output = np.empty((output_size, cur_col+1))
+                i = 0
+                j = 0
+                rhs_size = rhs.time.shape[0]
+                size = 0
+
+                prev_lhs = np.zeros((cur_col-1,))
+                prev_rhs = 0.0
+
+                while i<lhs_size and j < rhs_size:
+                    if lhs_time[i] < rhs.time[j]:
+                        output[size,0] = lhs_time[i]
+                        output[size,1:cur_col] = lhs_pos[i]
+                        output[size,cur_col] = prev_rhs
+                        prev_lhs = lhs_pos[i]
+                        i += 1
+                    elif lhs_time[i] > rhs.time[j]:
+                        output[size,0] = rhs.time[j]
+                        output[size,1:cur_col] = prev_lhs
+                        output[size,cur_col] = rhs.position[j]
+                        prev_rhs = rhs.position[j]
+                        j += 1
+                    else:
+                        output[size,0] = lhs_time[i]
+                        output[size,1:cur_col] = lhs_pos[i]
+                        output[size,cur_col] = rhs.position[j]
+                        prev_lhs = lhs_pos[i]
+                        prev_rhs = rhs.position[j]
+                        i += 1
+                        j += 1
+                    size += 1
+                
+                while i < lhs_size:
+                    output[size,0] = lhs_time[i]
+                    output[size,1:cur_col] = lhs_pos[i]
+                    output[size,cur_col] = prev_rhs
+                    prev_lhs = lhs_pos[i]
+                    i += 1
+                    size += 1
+
+                while j < rhs_size:
+                    output[size,0] = rhs.time[j]
+                    output[size,1:cur_col] = prev_lhs
+                    output[size,cur_col] = rhs.position[j]
+                    prev_rhs = rhs.position[j]
+                    j += 1
+                    size += 1
+                
+                lhs_size = size
+                lhs_pos = output[:,1:]
+                lhs_time = output[:,0]
+                cur_col += 1
+        
+            times = output[:size,0].copy()
+            spatial_coordinates = output[:size,1:].copy()
+            for i in xrange(spatial_coordinates.shape[0]):
+                spatial_coordinates[i,:] = parser.get_spatial_coordinate(spatial_coordinates[i,:])
+
+            spatial_coordinates = spatial_coordinates.reshape(3*size)
+            return (times, spatial_coordinates)
+        else:
+            return ([], [])

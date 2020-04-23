@@ -6,14 +6,12 @@ from standalone_visualizer import StandaloneVisualizer
 from data_generator import DataGenerator
 
 def run_app(parser):
-    stepper_data = parser.stepper_data
-    spatial_coordinates = parser.get_spatial_coordinates()
     printer_dimensions = parser.get_printer_dimensions()
 
     generator = DataGenerator(parser)
 
-    visualizer = StandaloneVisualizer(generator.steppers, stepper_data.time,
-        spatial_coordinates, printer_dimensions)
+    visualizer = StandaloneVisualizer(generator.steppers, generator.times,
+        generator.spatial_coordinates, printer_dimensions)
 
     visualizer.run(debug=True)
 
