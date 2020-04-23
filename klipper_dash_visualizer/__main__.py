@@ -1,6 +1,7 @@
 import sys
 import argparse
 import os
+import numpy as np
 from standalone_visualizer import StandaloneVisualizer
 
 def run_app(parser):
@@ -8,7 +9,12 @@ def run_app(parser):
     spatial_coordinates = parser.get_spatial_coordinates()
     printer_dimensions = parser.get_printer_dimensions()
 
-    visualizer = StandaloneVisualizer(parser.steppers, stepper_data.time,
+    stepper_names = parser.get_stepper_names()
+    steps = []
+    for i in range(len(stepper_names)):
+        steps.append(np.array(list(parser.get_steps(i, 0))))
+
+    visualizer = StandaloneVisualizer(parser.steppers, stepper_names, steps, stepper_data.time,
         spatial_coordinates, printer_dimensions)
 
     visualizer.run(debug=True)
