@@ -3,18 +3,16 @@ import argparse
 import os
 import numpy as np
 from standalone_visualizer import StandaloneVisualizer
+from data_generator import DataGenerator
 
 def run_app(parser):
     stepper_data = parser.stepper_data
     spatial_coordinates = parser.get_spatial_coordinates()
     printer_dimensions = parser.get_printer_dimensions()
 
-    stepper_names = parser.get_stepper_names()
-    steps = []
-    for i in range(len(stepper_names)):
-        steps.append(np.array(list(parser.get_steps(i, 0))))
+    generator = DataGenerator(parser)
 
-    visualizer = StandaloneVisualizer(parser.steppers, stepper_names, steps, stepper_data.time,
+    visualizer = StandaloneVisualizer(generator.steppers, stepper_data.time,
         spatial_coordinates, printer_dimensions)
 
     visualizer.run(debug=True)
