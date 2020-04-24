@@ -18,18 +18,19 @@ Click outside to when done
 """
 
 
-def graph_steppers(steppers):
+def graph_steppers(data):
     fig = go.Figure()
     layout = {}
     graph_height = 300
-    total_height = graph_height * len(steppers)
+    num_plots = len(data.steppers) + 1
+    total_height = graph_height * num_plots
     spacing_pixels = 20.0
 
     spacing = spacing_pixels / total_height
-    domains = list(reversed(np.linspace(0, 1+spacing, len(steppers)+1)))
+    domains = list(reversed(np.linspace(0, 1+spacing, num_plots+1)))
     y_axis_spacing = 0.03
 
-    for i, stepper in enumerate(steppers):
+    for i, stepper in enumerate(data.steppers):
         yaxis1 = "yaxis%i" % (3*i+1)
         yaxis2 = "yaxis%i" % (3*i+2)
         yaxis3 = "yaxis%i" % (3*i+3)
@@ -77,6 +78,40 @@ def graph_steppers(steppers):
             fixedrange=True
         )
 
+    if True:
+        i = num_plots - 1
+        yaxis1 = "yaxis%i" % (3*i+1)
+        yaxis2 = "yaxis%i" % (3*i+2)
+        y1 = "y%i" % (3*i+1)
+        y2 = "y%i" % (3*i+2)
+        color = DEFAULT_PLOTLY_COLORS[num_plots]
+        fig.add_trace(go.Scatter(
+            x=data.times, y=data.velocities,
+            name="Speed",
+            line=go.scatter.Line(dash="dash", color=color),
+            yaxis=y1
+        ))
+        fig.add_trace(go.Scatter(
+            x=data.times, y=data.accelerations,
+            name="Acceleration",
+            line=go.scatter.Line(dash="dot", color=color),
+            yaxis=y2
+        ))
+        layout[yaxis1] = go.layout.YAxis(
+            anchor="x",
+            domain=(domains[i+1], domains[i]-spacing),
+            showline=True,
+            fixedrange=True,
+            position=y_axis_spacing*0.0
+        )
+        layout[yaxis2] = go.layout.YAxis(
+            anchor="free",
+            overlaying=y1,
+            side="left",
+            position=y_axis_spacing*1.0,
+            fixedrange=True
+        )
+
     layout["xaxis"] = go.layout.XAxis(
         fixedrange=False,
         domain=[y_axis_spacing*3.0,1]
@@ -89,7 +124,7 @@ def graph_steppers(steppers):
     return fig
 
 class StandaloneVisualizer(object):
-    def __init__(self, steppers, times, spatial_coordinates, printer_dimensions):
+    def __init__(self, data, printer_dimensions):
         assets_folder = pkg_resources.resource_filename("klipper_dash_visualizer", "assets")
         assets_folder = os.path.abspath(assets_folder)
         app = Dash(
@@ -104,12 +139,12 @@ class StandaloneVisualizer(object):
             children = [
                 dcc.Graph(
                     id="steppers",
-                    figure=graph_steppers(steppers),
+                    figure=graph_steppers(data),
                 )
             ],
-            vertices=spatial_coordinates,
+            vertices=data.spatial_coordinates.ravel(),
             printer_dimensions=printer_dimensions,
-            times=times
+            times=data.times
         )
 
         app.clientside_callback(

@@ -10,8 +10,7 @@ def run_app(parser):
 
     generator = DataGenerator(parser)
 
-    visualizer = StandaloneVisualizer(generator.steppers, generator.times,
-        generator.spatial_coordinates, printer_dimensions)
+    visualizer = StandaloneVisualizer(generator, printer_dimensions)
 
     visualizer.run(debug=True)
 
