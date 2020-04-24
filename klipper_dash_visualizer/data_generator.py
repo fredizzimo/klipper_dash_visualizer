@@ -41,6 +41,90 @@ def calculate_velocities_and_accelerations(times, positions):
 
     return velocity, acceleration
 
+def merge_steppers(steppers):
+    if len(steppers):
+        lhs_time = steppers[0].time
+        lhs_size = lhs_time.shape[0]
+        lhs = np.arange(0, lhs_size)
+
+        output_size = lhs_size + steppers[1].time.shape[0]
+
+        for cur_col, rhs in enumerate(steppers[1:], start=1):
+            output_size = lhs_size + rhs.time.shape[0] 
+            times = np.empty((output_size, 1))
+            output = np.empty((output_size, cur_col+1), dtype=np.uint32)
+            i = 0
+            j = 0
+            rhs_size = rhs.time.shape[0]
+            size = 0
+
+            prev_lhs = np.zeros((cur_col+1,))
+            prev_rhs = 0.0
+
+            while i<lhs_size and j < rhs_size:
+                if lhs_time[i] < rhs.time[j]:
+                    times[size] = lhs_time[i]
+                    output[size,:cur_col] = lhs[i]
+                    output[size,cur_col] = prev_rhs
+                    prev_lhs = lhs[i]
+                    i += 1
+                elif lhs_time[i] > rhs.time[j]:
+                    times[size] = rhs.time[j]
+                    output[size,:cur_col] = prev_lhs
+                    output[size,cur_col] = j
+                    prev_rhs = j
+                    j += 1
+                else:
+                    times[size] = lhs_time[i]
+                    output[size,:cur_col] = lhs[i]
+                    output[size,cur_col] = j
+                    prev_lhs = lhs[i]
+                    prev_rhs = j
+                    i += 1
+                    j += 1
+                size += 1
+            
+            while i < lhs_size:
+                times[size] = lhs_time[i]
+                output[size,:cur_col] = lhs[i]
+                output[size,cur_col] = prev_rhs
+                prev_lhs = lhs[i]
+                i += 1
+                size += 1
+
+            while j < rhs_size:
+                times[size] = rhs.time[j]
+                output[size,:cur_col] = prev_lhs
+                output[size,cur_col] = rhs.position[j]
+                prev_rhs = rhs.position[j]
+                j += 1
+                size += 1
+            
+            lhs_size = size
+            lhs = output
+            lhs_time = times
+            cur_col += 1
+    
+        times = times[:size].copy().reshape(size)
+        indices = output[:size,:].copy()
+
+        return (times, indices)
+    else:
+        return np.empty(0), np.empty((0,0))
+
+def interpolate_stepper_positions(steppers, times, spatial_indices):
+    stepper_positions = np.empty((spatial_indices.shape[0], spatial_indices.shape[1]))
+    for i, stepper in enumerate(steppers):
+        stepper_times = stepper.time[spatial_indices[:,i]]
+        positions = stepper.position[spatial_indices[:,i]]
+        velocities = stepper.velocity[spatial_indices[:,i]]
+        accelerations = stepper.acceleration[spatial_indices[:,i]]
+        dt = times - stepper_times
+        dt2 = dt*dt
+        stepper_positions[:,i] = positions + velocities*dt + 0.5*accelerations*dt2
+    
+    return stepper_positions
+
 class Stepper(object):
     def __init__(self, name):
         self.name = name
@@ -68,86 +152,12 @@ class DataGenerator(object):
 
     def generate_spatial_coordinates(self, parser):
         spatial_steppers = parser.get_spatial_steppers()
+        spatial_steppers = [self.steppers[i] for i in spatial_steppers]
+
         if len(spatial_steppers):
-            spatial_steppers = [self.steppers[i] for i in spatial_steppers]
+            times, spatial_indices = merge_steppers(spatial_steppers)
 
-            lhs_time = spatial_steppers[0].time
-            lhs_size = lhs_time.shape[0]
-            lhs = np.arange(0, lhs_size)
-
-            output_size = lhs_size + spatial_steppers[1].time.shape[0]
-            cur_col = 1
-
-            for rhs in spatial_steppers[1:]:
-                output_size = lhs_size + rhs.time.shape[0] 
-                times = np.empty((output_size, 1))
-                output = np.empty((output_size, cur_col+1), dtype=np.uint32)
-                i = 0
-                j = 0
-                rhs_size = rhs.time.shape[0]
-                size = 0
-
-                prev_lhs = np.zeros((cur_col+1,))
-                prev_rhs = 0.0
-
-                while i<lhs_size and j < rhs_size:
-                    if lhs_time[i] < rhs.time[j]:
-                        times[size] = lhs_time[i]
-                        output[size,:cur_col] = lhs[i]
-                        output[size,cur_col] = prev_rhs
-                        prev_lhs = lhs[i]
-                        i += 1
-                    elif lhs_time[i] > rhs.time[j]:
-                        times[size] = rhs.time[j]
-                        output[size,:cur_col] = prev_lhs
-                        output[size,cur_col] = j
-                        prev_rhs = j
-                        j += 1
-                    else:
-                        times[size] = lhs_time[i]
-                        output[size,:cur_col] = lhs[i]
-                        output[size,cur_col] = j
-                        prev_lhs = lhs[i]
-                        prev_rhs = j
-                        i += 1
-                        j += 1
-                    size += 1
-                
-                while i < lhs_size:
-                    times[size] = lhs_time[i]
-                    output[size,:cur_col] = lhs[i]
-                    output[size,cur_col] = prev_rhs
-                    prev_lhs = lhs[i]
-                    i += 1
-                    size += 1
-
-                while j < rhs_size:
-                    times[size] = rhs.time[j]
-                    output[size,:cur_col] = prev_lhs
-                    output[size,cur_col] = rhs.position[j]
-                    prev_rhs = rhs.position[j]
-                    j += 1
-                    size += 1
-                
-                lhs_size = size
-                lhs = output
-                lhs_time = times
-                cur_col += 1
-        
-            times = times[:size].copy().reshape(size)
-            spatial_indices = output[:size,:].copy()
-            del output
-            spatial_coordinates = np.empty((size, spatial_indices.shape[1]))
-
-            for i, stepper in enumerate(spatial_steppers):
-                stepper_times = stepper.time[spatial_indices[:,i]]
-                positions = stepper.position[spatial_indices[:,i]]
-                velocities = stepper.velocity[spatial_indices[:,i]]
-                accelerations = stepper.acceleration[spatial_indices[:,i]]
-                dt = times - stepper_times
-                dt2 = dt*dt
-                spatial_coordinates[:,i] = positions + velocities*dt + 0.5*accelerations*dt2
-                pass
+            spatial_coordinates  = interpolate_stepper_positions(spatial_steppers, times, spatial_indices)
 
             for i in xrange(spatial_coordinates.shape[0]):
                 spatial_coordinates[i,:] = parser.get_spatial_coordinate(spatial_coordinates[i,:])
