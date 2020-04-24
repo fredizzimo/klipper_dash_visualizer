@@ -108,7 +108,7 @@ def graph_steppers(data):
     fig.update_layout(layout)
     return fig
 
-class StandaloneVisualizer(object):
+class DashApp(object):
     def __init__(self, data, printer_dimensions):
         assets_folder = pkg_resources.resource_filename("klipper_dash_visualizer", "assets")
         assets_folder = os.path.abspath(assets_folder)

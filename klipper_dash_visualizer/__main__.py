@@ -2,7 +2,7 @@ import sys
 import argparse
 import os
 import numpy as np
-from standalone_visualizer import StandaloneVisualizer
+from dash_app import DashApp
 from data_generator import DataGenerator
 
 def run_app(parser):
@@ -10,9 +10,9 @@ def run_app(parser):
 
     generator = DataGenerator(parser)
 
-    visualizer = StandaloneVisualizer(generator, printer_dimensions)
+    app = DashApp(generator, printer_dimensions)
 
-    visualizer.run(debug=True)
+    app.run(debug=True)
 
 def main():
     parser = argparse.ArgumentParser(description=
