@@ -17,7 +17,6 @@ Click and use the mouse and arrow keys to zoom and move around.
 Click outside to when done
 """
 
-
 def graph_steppers(data):
     fig = go.Figure()
     layout = {}
@@ -30,87 +29,73 @@ def graph_steppers(data):
     domains = list(reversed(np.linspace(0, 1+spacing, num_plots+1)))
     y_axis_spacing = 0.03
 
+    def add_subgraph(num, time, pos, vel, acc):
+        num_axes = len(fig.data)
+        y1 = "y%i" % (num_axes+1)
+
+        def axis_template():
+            def f(pos):
+                return go.layout.YAxis(
+                anchor="x",
+                domain=(domains[num+1], domains[num]-spacing),
+                showline=True,
+                fixedrange=True,
+                position=y_axis_spacing*pos
+            )
+            yield f
+            def f2(pos):
+                return go.layout.YAxis(
+                    anchor="free",
+                    overlaying=y1,
+                    side="left",
+                    position=y_axis_spacing*pos,
+                    fixedrange=True
+                )
+            while True:
+                yield f2
+
+        axis = axis_template()
+        yaxis = ("yaxis%i" % (i,) for i in xrange(num_axes+1, 1000))
+        y = ("y%i" % (i,) for i in xrange(num_axes+1, 1000))
+
+        color = DEFAULT_PLOTLY_COLORS[num]
+        if pos is not None:
+            fig.add_trace(go.Scatter(
+                x=time, y=pos[0],
+                name="%s pos" % pos[1],
+                line=go.scatter.Line(color=color),
+                yaxis=y.next()
+            ))
+            layout[yaxis.next()] = axis.next()(0.0)
+        if vel is not None:
+            fig.add_trace(go.Scatter(
+                x=time, y=vel[0],
+                name="%s vel" % vel[1],
+                line=go.scatter.Line(dash="dash", color=color),
+                yaxis=y.next()
+            ))
+            layout[yaxis.next()] = axis.next()(1.0)
+        if acc is not None:
+            fig.add_trace(go.Scatter(
+                x=time, y=acc[0],
+                name="%s acc" % acc[1],
+                line=go.scatter.Line(dash="dot", color=color),
+                yaxis=y.next()
+            ))
+            layout[yaxis.next()] = axis.next()(2.0)
+
     for i, stepper in enumerate(data.steppers):
-        yaxis1 = "yaxis%i" % (3*i+1)
-        yaxis2 = "yaxis%i" % (3*i+2)
-        yaxis3 = "yaxis%i" % (3*i+3)
-        y1 = "y%i" % (3*i+1)
-        y2 = "y%i" % (3*i+2)
-        y3 = "y%i" % (3*i+3)
-        color = DEFAULT_PLOTLY_COLORS[i]
-        fig.add_trace(go.Scatter(
-            x=stepper.time, y=stepper.position,
-            name="%s pos" % stepper.name,
-            line=go.scatter.Line(color=color),
-            yaxis=y1
-        ))
-        fig.add_trace(go.Scatter(
-            x=stepper.time, y=stepper.velocity,
-            name="%s vel" % stepper.name,
-            line=go.scatter.Line(dash="dash", color=color),
-            yaxis=y2
-        ))
-        fig.add_trace(go.Scatter(
-            x=stepper.time, y=stepper.acceleration,
-            name="%s acc" % stepper.name,
-            line=go.scatter.Line(dash="dot", color=color),
-            yaxis=y3
-        ))
-        layout[yaxis1] = go.layout.YAxis(
-            anchor="x",
-            domain=(domains[i+1], domains[i]-spacing),
-            showline=True,
-            fixedrange=True,
-            position=y_axis_spacing*0.0
-        )
-        layout[yaxis2] = go.layout.YAxis(
-            anchor="free",
-            overlaying=y1,
-            side="left",
-            position=y_axis_spacing*1.0,
-            fixedrange=True
-        )
-        layout[yaxis3] = go.layout.YAxis(
-            anchor="free",
-            overlaying=y1,
-            side="left",
-            position=y_axis_spacing*2.0,
-            fixedrange=True
+        add_subgraph(i, stepper.time,
+            (stepper.position, "%s pos" % stepper.name),
+            (stepper.velocity, "%s vel" % stepper.name),
+            (stepper.acceleration, "%s acc" % stepper.name)
         )
 
-    if True:
-        i = num_plots - 1
-        yaxis1 = "yaxis%i" % (3*i+1)
-        yaxis2 = "yaxis%i" % (3*i+2)
-        y1 = "y%i" % (3*i+1)
-        y2 = "y%i" % (3*i+2)
-        color = DEFAULT_PLOTLY_COLORS[num_plots]
-        fig.add_trace(go.Scatter(
-            x=data.times, y=data.velocities,
-            name="Speed",
-            line=go.scatter.Line(dash="dash", color=color),
-            yaxis=y1
-        ))
-        fig.add_trace(go.Scatter(
-            x=data.times, y=data.accelerations,
-            name="Acceleration",
-            line=go.scatter.Line(dash="dot", color=color),
-            yaxis=y2
-        ))
-        layout[yaxis1] = go.layout.YAxis(
-            anchor="x",
-            domain=(domains[i+1], domains[i]-spacing),
-            showline=True,
-            fixedrange=True,
-            position=y_axis_spacing*0.0
-        )
-        layout[yaxis2] = go.layout.YAxis(
-            anchor="free",
-            overlaying=y1,
-            side="left",
-            position=y_axis_spacing*1.0,
-            fixedrange=True
-        )
+    add_subgraph(num_plots-1, data.times,
+        None,
+        (data.velocities, "Velocity"),
+        (data.accelerations, "Acceleration")
+    )
 
     layout["xaxis"] = go.layout.XAxis(
         fixedrange=False,
