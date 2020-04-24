@@ -1,8 +1,8 @@
 include klipper_dash_visualizer/klipper_dash_visualizer.min.js
 include klipper_dash_visualizer/klipper_dash_visualizer.min.js.map
+include klipper_dash_visualizer/klipper_dash_visualizer.css
 include klipper_dash_visualizer/metadata.json
 include klipper_dash_visualizer/package-info.json
-include klipper_dash_visualizer/assets/*
 include README.md
 include LICENSE
 include package.json

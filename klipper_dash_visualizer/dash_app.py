@@ -1,11 +1,8 @@
 from __future__ import absolute_import
 
-import pkg_resources
-import os
 from dash import Dash
 from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
-import dash_html_components as html
 from .App import App
 from .plots import main_plot
 
@@ -17,15 +14,7 @@ Click outside to when done
 
 class DashApp(object):
     def __init__(self, data, printer_dimensions):
-        assets_folder = pkg_resources.resource_filename("klipper_dash_visualizer", "assets")
-        assets_folder = os.path.abspath(assets_folder)
-        app = Dash(
-            assets_folder=assets_folder,
-            include_assets_files=False,
-            external_stylesheets= [
-                "/assets/standalone.css"
-            ]
-        )
+        app = Dash()
         app.layout = App(
             id="app",
             children = [
