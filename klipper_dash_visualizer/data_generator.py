@@ -1,4 +1,5 @@
 import numpy as np
+from colormap import turbo_color_map
 
 def calculate_velocities_and_accelerations(times, positions):
     length = times.shape[0]
@@ -125,6 +126,44 @@ def interpolate_stepper_positions(steppers, times, spatial_indices):
     
     return stepper_positions
 
+def find_max_velocity(velocities):
+    # Find the maximum velocity by first applying some smoothing 
+    m = 0
+    avg = 0
+    coeff = 0.1
+    coeff2 = 1.0 - coeff
+    for v in velocities: 
+        avg = avg*(coeff2) + v*coeff
+        if avg > m:
+            m=avg
+    return m
+
+
+def interpolate(colormap, x):
+    x_scaled = x * 255.0
+    a = x_scaled.astype(np.uint16)
+    b = np.clip(a + 1, 0, 255)
+    f = x_scaled - a
+    speed_colors = np.empty((x.shape[0], 3))
+    speed_colors[:,0] = colormap[a,0] + (colormap[b,0] - colormap[a,0]) * f
+    speed_colors[:,1] = colormap[a,1] + (colormap[b,1] - colormap[a,1]) * f
+    speed_colors[:,2] = colormap[a,2] + (colormap[b,2] - colormap[a,2]) * f
+    return speed_colors
+
+def generate_speed_colors(velocities):
+    max_velocity = find_max_velocity(velocities)
+    if max_velocity < 1:
+        max_velocity = 1.0
+    #TODO hardcoded maximum for better visualization
+    # The whole functionality should be moved to the shaders so that the user 
+    # can tune it manually
+    max_velocity = 100.0
+    velocity_multipliers = velocities / max_velocity
+    np.clip(velocity_multipliers, 0.0, 1.0, out=velocity_multipliers)
+    speed_colors = interpolate(turbo_color_map, velocity_multipliers)
+    return speed_colors
+
+
 class Stepper(object):
     def __init__(self, name):
         self.name = name
@@ -149,6 +188,8 @@ class DataGenerator(object):
 
         self.times, self.spatial_coordinates = self.generate_spatial_coordinates(parser)
         self.velocities, self.accelerations = self.generate_velocities_and_accelerations()
+        self.speed_colors = generate_speed_colors(self.velocities)
+        pass
 
     def generate_spatial_coordinates(self, parser):
         spatial_steppers = parser.get_spatial_steppers()

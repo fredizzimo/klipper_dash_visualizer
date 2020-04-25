@@ -7,6 +7,7 @@ type Props =
     id?: string;
     vertices: Float32Array;
     times: Float32Array;
+    speed_colors: Float32Array;
     printer_dimensions: Array<Array<number>>;
     selected_time?: Array<number>;
     children: Node;
@@ -41,6 +42,7 @@ export default class App extends Component<Props, State> {
                             id="renderer"
                             vertices={this.props.vertices}
                             times={this.props.times}
+                            speed_colors={this.props.speed_colors}
                             printer_dimensions={this.props.printer_dimensions}
                             selected_time={this.props.selected_time}
                             active={this.state.activeTab=="3D View"}

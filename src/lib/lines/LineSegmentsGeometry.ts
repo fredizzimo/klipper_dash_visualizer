@@ -80,7 +80,7 @@ export class LineSegmentsGeometry extends InstancedBufferGeometry
         if (geometry.colors != null) 
         {
             var colorBuffer = geometry.colors.buffer
-            var colors = new Float32Array(colorBuffer, rangeStart*2*4, numElements*2)
+            var colors = new Float32Array(colorBuffer, rangeStart*6*4, numElements*6)
             this.setColors(colors);
         }
         else
