@@ -54,13 +54,17 @@ ShaderLib[ 'line' ] = {
         attribute vec3 instanceStart;
         attribute vec3 instanceEnd;
 
-        attribute vec3 instanceColorStart;
-        attribute vec3 instanceColorEnd;
+        attribute float instanceColorStart;
+        attribute float instanceColorEnd;
 
         varying vec2 vUv;
         varying vec4 worldPos;
         varying vec3 worldStart;
         varying vec3 worldEnd;
+
+        #ifdef SEGMENT_COLORS
+        varying float vSegmentColor;
+        #endif
 
         #ifdef USE_DASH
 
@@ -88,10 +92,8 @@ ShaderLib[ 'line' ] = {
 
         void main() {
 
-            #ifdef USE_COLOR
-
-                vColor.xyz = ( position.y < 0.5 ) ? instanceColorStart : instanceColorEnd;
-
+            #ifdef SEGMENT_COLORS
+                vSegmentColor = ( position.y < 0.5 ) ? instanceColorStart : instanceColorEnd;
             #endif
 
             #ifdef USE_DASH
@@ -264,6 +266,9 @@ ShaderLib[ 'line' ] = {
         #endif
 
         varying float vLineDistance;
+        #ifdef SEGMENT_COLORS
+        varying float vSegmentColor;
+        #endif
         varying vec4 worldPos;
         varying vec3 worldStart;
         varying vec3 worldEnd;
@@ -353,7 +358,14 @@ ShaderLib[ 'line' ] = {
             vec4 diffuseColor = vec4( diffuse, opacity );
 
             #include <logdepthbuf_fragment>
-            #include <color_fragment>
+            #ifdef SEGMENT_COLORS
+            const float maxSegmentColor = 200.0;
+            float multiplier = vSegmentColor / maxSegmentColor;
+            multiplier = clamp(multiplier, 0.0, 1.0);
+            diffuseColor.r = multiplier;
+            diffuseColor.g = 0.0;
+            diffuseColor.b = 0.0;
+            #endif
 
             gl_FragColor = vec4( diffuseColor.rgb, diffuseColor.a );
 
@@ -375,6 +387,7 @@ export interface LineMaterialParameters extends MaterialParameters {
   gapSize?: number;
   linewidth?: number;
   resolution?: Vector2;
+  segmentColors?: boolean;
 }
 
 export class LineMaterial extends ShaderMaterial {
@@ -460,5 +473,21 @@ export class LineMaterial extends ShaderMaterial {
 
     set resolution( value ) {
         this.uniforms.resolution.value.copy( value );
+    }
+
+    get segmentColors() {
+        return 'SEGMENT_COLORS' in this.defines;
+    }
+
+    set segmentColors( value ) {
+        if ( value === true ) {
+
+            this.defines.SEGMENT_COLORS = '';
+
+        } else {
+
+            delete this.defines.SEGMENT_COLORS;
+
+        }
     }
 }

@@ -11,7 +11,7 @@ App.propTypes = {
     id: PropTypes.string,
     vertices: PropTypes.arrayOf(PropTypes.number).isRequired,
     times: PropTypes.arrayOf(PropTypes.number).isRequired,
-    speed_colors: PropTypes.arrayOf(PropTypes.number).isRequired,
+    velocities: PropTypes.arrayOf(PropTypes.number).isRequired,
     printer_dimensions: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)).isRequired,
     selected_time: PropTypes.arrayOf(PropTypes.number),
     children: PropTypes.node

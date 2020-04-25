@@ -14,7 +14,7 @@ type KlipperDashRendererProps =
     id?: string;
     vertices: Float32Array;
     times: Float32Array;
-    speed_colors: Float32Array;
+    velocities: Float32Array;
     printer_dimensions: Array<Array<number>>;
     selected_time?: Array<number>;
     active: boolean;
@@ -157,14 +157,14 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
     add_lines() {
         var geometry = new LineGeometry();
         geometry.setPositions(this.props.vertices);
-        geometry.setColors(this.props.speed_colors)
+        geometry.setColors(this.props.velocities)
         this.line_geometry = geometry;
 
         this.line_material_normal = new LineMaterial({
             color: 0xFFFFFF,
             worldUnits: true,
             linewidth: 0.4,
-            vertexColors: true,
+            segmentColors: true,
             dashed: false
 
         });
@@ -172,7 +172,7 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
             color: 0xFFFFFF,
             worldUnits: true,
             linewidth: 0.4,
-            vertexColors: true,
+            segmentColors: true,
             dashed: false
 
         });

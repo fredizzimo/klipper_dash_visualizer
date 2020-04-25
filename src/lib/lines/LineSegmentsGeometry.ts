@@ -80,7 +80,7 @@ export class LineSegmentsGeometry extends InstancedBufferGeometry
         if (geometry.colors != null) 
         {
             var colorBuffer = geometry.colors.buffer
-            var colors = new Float32Array(colorBuffer, rangeStart*6*4, numElements*6)
+            var colors = new Float32Array(colorBuffer, rangeStart*2*4, numElements*2)
             this.setColors(colors);
         }
         else
@@ -107,10 +107,10 @@ export class LineSegmentsGeometry extends InstancedBufferGeometry
             return;
         }
 
-        var instanceColorBuffer = new InstancedInterleavedBuffer( colors, 6, 1 ); // rgb, rgb
+        var instanceColorBuffer = new InstancedInterleavedBuffer( colors, 2, 1 );
 
-        this.setAttribute("instanceColorStart", new InterleavedBufferAttribute(instanceColorBuffer, 3, 0)); // rgb
-        this.setAttribute("instanceColorEnd", new InterleavedBufferAttribute(instanceColorBuffer, 3, 3)); // rgb
+        this.setAttribute("instanceColorStart", new InterleavedBufferAttribute(instanceColorBuffer, 1, 0)); 
+        this.setAttribute("instanceColorEnd", new InterleavedBufferAttribute(instanceColorBuffer, 1, 1));
     }
 
     private setDistances(distances: Float32Array) {

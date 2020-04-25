@@ -24,7 +24,7 @@ class DashApp(object):
                 )
             ],
             vertices=data.spatial_coordinates.ravel(),
-            speed_colors=data.speed_colors.ravel(),
+            velocities=data.velocities.ravel(),
             printer_dimensions=printer_dimensions,
             times=data.times
         )
