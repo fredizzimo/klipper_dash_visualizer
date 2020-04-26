@@ -67,7 +67,7 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
     componentDidMount() {
         var scene = new THREE.Scene();
         this.scene = scene;
-        var camera = new THREE.PerspectiveCamera( 75, 2, 0.1, 1000 );
+        var camera = new THREE.PerspectiveCamera( 75, 2, 0.01, 1000 );
         var renderer = new THREE.WebGLRenderer({
             canvas: this.myRef.current,
             alpha: true
@@ -163,7 +163,7 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         this.line_material_normal = new LineMaterial({
             color: 0xFFFFFF,
             worldUnits: true,
-            linewidth: 0.4,
+            linewidth: 0.001,
             segmentColors: true,
             dashed: false
 

@@ -23,8 +23,26 @@ export class LineSegmentsGeometry extends InstancedBufferGeometry
 
         this.type = 'LineSegmentsGeometry';
 
-        var positions = [ - 1, 2, 0, 1, 2, 0, - 1, 1, 0, 1, 1, 0, - 1, 0, 0, 1, 0, 0, - 1, - 1, 0, 1, - 1, 0 ];
-        var uvs = [ - 1, 2, 1, 2, - 1, 1, 1, 1, - 1, - 1, 1, - 1, - 1, - 2, 1, - 2 ];
+        var positions = [
+             - 1, 2, 0, // Left endcap end
+               1, 2, 0, // Right endcap end
+              -1, 1, 0, // Left endcap start
+               1, 1, 0, // Right endcap start
+              -1, 0, 0, // Left mid
+               1, 0, 0, // Right mid
+              -1,-1, 0, // Left start
+               1,-1, 0  // Right start
+        ];
+        var uvs = [
+              -1, 2, // Left endcap end
+               1, 2, // Right endcap end
+              -1, 1, // Left endcap start
+               1, 1, // Right endcap start
+              -1,-1, // Left mid
+               1,-1, // Right mid
+              -1,-2, // Left start
+               1,-2  // right start
+        ];
         var index = [ 0, 2, 1, 2, 3, 1, 2, 4, 3, 4, 5, 3, 4, 6, 5, 6, 7, 5 ];
 
         this.setIndex( index );

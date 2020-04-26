@@ -69,7 +69,8 @@ ShaderLib[ 'line' ] = {
         varying vec3 worldEnd;
 
         #ifdef SEGMENT_COLORS
-        varying float vSegmentColor;
+        varying float vSegmentColorStart;
+        varying float vSegmentColorEnd;
         #endif
 
         #ifdef USE_DASH
@@ -99,7 +100,8 @@ ShaderLib[ 'line' ] = {
         void main() {
 
             #ifdef SEGMENT_COLORS
-                vSegmentColor = ( position.y < 0.5 ) ? instanceColorStart : instanceColorEnd;
+                vSegmentColorStart = instanceColorStart;
+                vSegmentColorEnd = instanceColorEnd;
             #endif
 
             #ifdef USE_DASH
@@ -276,7 +278,8 @@ ShaderLib[ 'line' ] = {
 
         varying float vLineDistance;
         #ifdef SEGMENT_COLORS
-        varying float vSegmentColor;
+        varying float vSegmentColorStart;
+        varying float vSegmentColorEnd;
         #endif
         varying vec4 worldPos;
         varying vec3 worldStart;
@@ -369,9 +372,13 @@ ShaderLib[ 'line' ] = {
             #include <logdepthbuf_fragment>
             #ifdef SEGMENT_COLORS
                 const float maxSegmentColor = 200.0;
-                vec2 multiplier = vec2(vSegmentColor / maxSegmentColor, 0.5);
-                multiplier.x = clamp(multiplier.x, 0.0, 1.0);
-                vec4 mapColor = texture2D(colorMap, multiplier);
+                // Convert the range (-1-1  to 0-1)
+                float multiplier = 0.5*(vUv.y + 1.0);
+
+                float segmentColor = vSegmentColorStart + (vSegmentColorEnd - vSegmentColorStart) * multiplier;
+                segmentColor /= maxSegmentColor;
+
+                vec4 mapColor = texture2D(colorMap, vec2(segmentColor, 0.5));
                 diffuseColor.rgb = mapColor.rgb;
             #endif
 
