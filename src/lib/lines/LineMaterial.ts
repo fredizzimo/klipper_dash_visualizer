@@ -25,6 +25,17 @@ import {
     RGBFormat,
     FloatType,
     LinearFilter,
+    CustomBlending,
+    NormalBlending,
+    SrcAlphaFactor,
+    DstAlphaFactor,
+    MinEquation,
+    NoBlending,
+    Shader,
+    WebGLRenderer,
+    Line,
+    Material,
+    Texture,
 } from "three";
 
 let LineUniform = {
@@ -35,7 +46,8 @@ let LineUniform = {
     dashScale: { value: 1 },
     dashSize: { value: 1 },
     gapSize: { value: 1 }, // todo FIX - maybe change to totalSize
-    colorMap: { value: DataTexture}
+    colorMap: { value: DataTexture},
+    distanceMap: {value: Texture}
 };
 
 ShaderLib[ 'line' ] = {
@@ -248,6 +260,9 @@ ShaderLib[ 'line' ] = {
                 clip.xy += offset;
 
             #endif
+            #ifdef DEPTH_PASS
+            clip.z += 0.001;
+            #endif
 
             gl_Position = clip;
 
@@ -274,6 +289,8 @@ ShaderLib[ 'line' ] = {
         #endif
         #ifdef SEGMENT_COLORS
             uniform sampler2D colorMap;
+            uniform sampler2D distanceMap;
+            uniform vec2 resolution;
         #endif
 
         varying float vLineDistance;
@@ -348,11 +365,15 @@ ShaderLib[ 'line' ] = {
                 float norm = len / linewidth;
 
                 #ifndef USE_DASH
-
                     if (norm > 0.5) discard;
-
                 #endif
 
+                #ifdef NORMAL_PASS
+                    vec4 distance = texture2D(distanceMap, gl_FragCoord.xy / resolution);
+                    if (norm*2.0 > distance.r) {
+                        discard;
+                    }
+                #endif
             #else
 
                 if ( abs( vUv.y ) > 1.0 ) {
@@ -367,28 +388,34 @@ ShaderLib[ 'line' ] = {
 
             #endif
 
-            vec4 diffuseColor = vec4( diffuse, opacity );
+            #ifdef NORMAL_PASS
+                vec4 diffuseColor = vec4( diffuse, opacity );
 
-            #include <logdepthbuf_fragment>
-            #ifdef SEGMENT_COLORS
-                const float maxSegmentColor = 200.0;
-                // Convert the range (-1-1  to 0-1)
-                float multiplier = 0.5*(vUv.y + 1.0);
+                #include <logdepthbuf_fragment>
+                #ifdef SEGMENT_COLORS
+                    const float maxSegmentColor = 200.0;
+                    // Convert the range (-1-1  to 0-1)
+                    float multiplier = params.x;
 
-                float segmentColor = vSegmentColorStart + (vSegmentColorEnd - vSegmentColorStart) * multiplier;
-                segmentColor /= maxSegmentColor;
+                    float segmentColor = vSegmentColorStart + (vSegmentColorEnd - vSegmentColorStart) * multiplier;
+                    segmentColor /= maxSegmentColor;
 
-                vec4 mapColor = texture2D(colorMap, vec2(segmentColor, 0.5));
-                diffuseColor.rgb = mapColor.rgb;
+                    vec4 mapColor = texture2D(colorMap, vec2(segmentColor, 0.5));
+                    diffuseColor.rgb = mapColor.rgb;
+                #endif
+                gl_FragColor = vec4(diffuseColor.rgb, 1);
             #endif
-
-            gl_FragColor = vec4( diffuseColor.rgb, diffuseColor.a );
+            #ifdef DISTANCE_PASS
+                gl_FragColor = vec4( norm / 0.5, 0, 0, 1);
+            #endif
+            #ifdef DEPTH_PASS 
+                gl_FragColor = vec4(1.0, 0, 0, 1);
+            #endif
 
             #include <premultiplied_alpha_fragment>
             #include <tonemapping_fragment>
             #include <encodings_fragment>
             #include <fog_fragment>
-
         }
         `
 };
@@ -403,10 +430,19 @@ export interface LineMaterialParameters extends MaterialParameters {
   linewidth?: number;
   resolution?: Vector2;
   segmentColors?: boolean;
+  pass? : LinePass;
+  distanceMap?: Texture;
+}
+
+export enum LinePass {
+    Depth,
+    Distance,
+    Normal,
 }
 
 export class LineMaterial extends ShaderMaterial {
     dashed: boolean
+    pass: LinePass
     constructor(parameters?: LineMaterialParameters) {
         super( {
             uniforms: UniformsUtils.clone( ShaderLib[ 'line' ].uniforms ),
@@ -417,10 +453,18 @@ export class LineMaterial extends ShaderMaterial {
         } );
 
         this.dashed = false;
+        this.pass = LinePass.Normal;
         this.uniforms.colorMap.value = new DataTexture(turbo_colormap_data, 256, 1, RGBFormat, FloatType);
         this.uniforms.colorMap.value.magFilter = LinearFilter;
         this.uniforms.colorMap.value.minFilter = LinearFilter;
         this.setValues( parameters );
+    }
+
+    copy(source: LineMaterial): this{
+        super.copy(source);
+        this.dashed = source.dashed;
+        this.pass = source.pass; 
+        return this;
     }
 
     get color () {
@@ -493,6 +537,14 @@ export class LineMaterial extends ShaderMaterial {
         this.uniforms.resolution.value.copy( value );
     }
 
+    get distanceMap() {
+        return this.uniforms.distanceMap.value;
+    }
+
+    set distanceMap(value) {
+        this.uniforms.distanceMap.value = value;
+    }
+
     get segmentColors() {
         return 'SEGMENT_COLORS' in this.defines;
     }
@@ -508,4 +560,29 @@ export class LineMaterial extends ShaderMaterial {
 
         }
     }
+
+    onBeforeCompile(shader :Shader, renderer: WebGLRenderer ) {
+        delete this.defines.DEPTH_PASS;
+        delete this.defines.DISTANCE_PASS;
+        delete this.defines.NORMAL_PASS;
+        if (this.pass == LinePass.Depth) {
+            this.defines.DEPTH_PASS = "";
+            this.blending = NoBlending;
+            this.depthWrite = true;
+        }
+        else if (this.pass == LinePass.Distance) {
+            this.defines.DISTANCE_PASS = "";
+            this.blending = CustomBlending;
+            this.blendEquation = MinEquation;
+            this.blendSrc = SrcAlphaFactor;
+            this.blendDst = DstAlphaFactor;
+            this.depthWrite = false;
+        }
+        else {
+            this.defines.NORMAL_PASS = "";
+            this.depthWrite = true;
+            this.blending = NormalBlending;
+        }
+    }
+
 }

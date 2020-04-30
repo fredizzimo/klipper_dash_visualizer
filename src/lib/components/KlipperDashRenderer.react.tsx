@@ -4,10 +4,11 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 import tinycolor from "tinycolor2"
 import { Line2 } from "../lines/Line2";
-import { LineMaterial } from "../lines/LineMaterial";
+import { LineMaterial, LinePass } from "../lines/LineMaterial";
 import { LineGeometry } from "../lines/LineGeometry";
 import { LineSegmentsGeometry } from "../lines/LineSegmentsGeometry";
 import {range_start, range_end} from "../helpers"
+import { Vector2 } from "three";
 
 type KlipperDashRendererProps =
 {
@@ -32,27 +33,22 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
     private camera: THREE.PerspectiveCamera;
     private renderer: THREE.WebGLRenderer;
     private scene: THREE.Scene;
+    private line_scene_depth_pass: THREE.Scene;
+    private line_scene_distance_pass: THREE.Scene;
     private line_geometry: LineGeometry;
     private line_material_normal: LineMaterial;
     private line_material_highlight: LineMaterial;
-    private line_before_highlight: Line2;
-    private line_highlight: Line2;
-    private line_after_highlight: Line2;
+    private line_material_normal_depth_pass: LineMaterial;
+    private line_material_highlight_depth_pass: LineMaterial;
+    private line_material_normal_distance_pass: LineMaterial;
+    private line_material_highlight_distance_pass: LineMaterial;
+    private line_geometry_before_highlight: LineSegmentsGeometry;
+    private line_geometry_highlight: LineSegmentsGeometry;
+    private line_geometry_after_highlight: LineSegmentsGeometry;
+    private line_render_target: THREE.WebGLRenderTarget;
 
     constructor(props: KlipperDashRendererProps) {
         super(props)
-
-        this.controls = null;
-        this.camera = null;
-        this.renderer = null;
-        this. camera = null;
-        this.renderer = null;
-        this.line_material_normal = null;
-        this.line_material_highlight = null;
-        this.line_geometry = null;
-        this.line_before_highlight = null;
-        this.line_highlight = null;
-        this.line_after_highlight = null;
     }
 
     componentDidUpdate(prevProps: KlipperDashRendererProps, prevState: KlipperDashRendererState) {
@@ -67,16 +63,19 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
     componentDidMount() {
         var scene = new THREE.Scene();
         this.scene = scene;
+        this.line_scene_depth_pass = new THREE.Scene();
+        this.line_scene_distance_pass = new THREE.Scene();
         var camera = new THREE.PerspectiveCamera( 75, 2, 0.01, 1000 );
         var renderer = new THREE.WebGLRenderer({
             canvas: this.myRef.current,
             alpha: true
         });
+        this.renderer = renderer;
         renderer.setPixelRatio(window.devicePixelRatio);
         var background_color = tinycolor(window.getComputedStyle(this.myRef.current).getPropertyValue("background-color"));
         var buildplate_color = tinycolor(window.getComputedStyle(this.myRef.current).getPropertyValue("--buildplate-color"));
         renderer.setClearColor(background_color.toHexString(), background_color.getAlpha());
-        //this.myRef.current.appendChild( renderer.domElement );
+        this.createLineRenderTarget();
 
         this.add_lines();
         this.add_build_plate(scene, buildplate_color);
@@ -91,7 +90,6 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         controls.update();
         this.controls = controls;
         this.camera = camera;
-        this.renderer = renderer;
 
         this.animate();
     } 
@@ -100,6 +98,14 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         this.resize();
         requestAnimationFrame(this.animate);
         this.controls.update()
+        this.renderer.autoClear = false;
+        this.renderer.setRenderTarget(this.line_render_target);
+        this.renderer.clear(true, true, true);
+        this.renderer.render(this.line_scene_depth_pass, this.camera);
+        this.renderer.render(this.line_scene_distance_pass, this.camera);
+
+        this.renderer.setRenderTarget(null);
+        this.renderer.clear(true, true, true);
         this.renderer.render(this.scene, this.camera);
     }
 
@@ -118,6 +124,14 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
             camera.updateProjectionMatrix();
             renderer.setSize(clientWidth, clientHeight, false);
             this.update_line_resolution();
+            var drawSize = new Vector2();
+            this.renderer.getDrawingBufferSize(drawSize);
+            drawSize.max(new Vector2(128, 128));
+            this.line_render_target.setSize( drawSize.x, drawSize.y);
+            if (this.line_render_target.depthTexture != null) {
+                this.line_render_target.depthTexture.image.width = drawSize.x;
+                this.line_render_target.depthTexture.image.height = drawSize.y;
+            }
         }
     }
 
@@ -166,7 +180,6 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
             linewidth: 0.001,
             segmentColors: true,
             dashed: false
-
         });
         this.line_material_highlight = new LineMaterial({
             color: 0xFFFFFF,
@@ -174,41 +187,79 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
             linewidth: 0.4,
             segmentColors: true,
             dashed: false
-
         });
+
+        this.line_material_normal_depth_pass = this.line_material_normal.clone();
+        this.line_material_normal_depth_pass.pass = LinePass.Depth;
+        this.line_material_highlight_depth_pass = this.line_material_highlight.clone();
+        this.line_material_highlight_depth_pass.pass = LinePass.Depth;
+
+        this.line_material_normal_distance_pass = this.line_material_normal.clone();
+        this.line_material_normal_distance_pass.pass = LinePass.Distance;
+        this.line_material_highlight_distance_pass = this.line_material_highlight.clone();
+        this.line_material_highlight_distance_pass.pass = LinePass.Distance;
+
+        this.line_material_normal.distanceMap = this.line_render_target.texture;
+        this.line_material_highlight.distanceMap = this.line_render_target.texture;
 
         this.update_line_segments()
         this.update_line_resolution();
     }
 
     update_line_resolution() {
-        var clientWidth = this.myRef.current.clientWidth;
-        var clientHeight = this.myRef.current.clientHeight;
-        this.line_material_normal.resolution.set(clientWidth, clientHeight);
-        this.line_material_highlight.resolution.set(clientWidth, clientHeight);
+        var drawSize = new Vector2();
+        this.renderer.getDrawingBufferSize(drawSize);
+        this.line_material_normal.resolution.set(drawSize.x, drawSize.y);
+        this.line_material_highlight.resolution.set(drawSize.x, drawSize.y);
+        this.line_material_normal_depth_pass.resolution.set(drawSize.x, drawSize.y);
+        this.line_material_highlight_depth_pass.resolution.set(drawSize.x, drawSize.y);
+        this.line_material_normal_distance_pass.resolution.set(drawSize.x, drawSize.y);
+        this.line_material_highlight_distance_pass.resolution.set(drawSize.x, drawSize.y);
     }
 
     update_line_segments() {
         var g = this.line_geometry;
 
-        var add_line = function(line: Line2, scene: THREE.Scene, material: LineMaterial) {
-            if (line != null) {
-                scene.remove(line)
-                line.geometry.dispose()
+        var dispose_geometry = function(geometry: LineSegmentsGeometry) {
+            if (geometry != null) {
+                geometry.dispose();
             }
-            let segmentGeometry = new LineSegmentsGeometry()
-            line = new Line2(segmentGeometry, material);
-            line.scale.set(1, 1, 1);
-            scene.add(line);
-            return line;
+        }
+        // TODO create separate line classes so that this can be generalized wihtout code duplication
+
+        dispose_geometry(this.line_geometry_before_highlight);
+        dispose_geometry(this.line_geometry_highlight);
+        dispose_geometry(this.line_geometry_after_highlight);
+
+        this.line_geometry_before_highlight = new LineSegmentsGeometry();
+        this.line_geometry_highlight = new LineSegmentsGeometry();
+        this.line_geometry_after_highlight = new LineSegmentsGeometry();
+
+        var clear_scene = function(scene: THREE.Scene) {
+            var toRemove = []
+            for (var i = 0;i<scene.children.length;i++) {
+                if (scene.children[i] instanceof Line2) {
+                    toRemove.push(scene.children[i]);
+                }
+            }
+            scene.remove(...toRemove);
         }
 
-        this.line_before_highlight = add_line(
-            this.line_before_highlight, this.scene, this.line_material_normal);
-        this.line_highlight = add_line(
-            this.line_highlight, this.scene, this.line_material_highlight);
-        this.line_after_highlight = add_line(
-            this.line_after_highlight, this.scene, this.line_material_normal);
+        clear_scene(this.line_scene_depth_pass);
+        clear_scene(this.line_scene_distance_pass);
+        clear_scene(this.scene);
+
+        this.line_scene_depth_pass.add(new Line2(this.line_geometry_before_highlight, this.line_material_normal_depth_pass));
+        this.line_scene_depth_pass.add(new Line2(this.line_geometry_highlight, this.line_material_highlight_depth_pass));
+        this.line_scene_depth_pass.add(new Line2(this.line_geometry_after_highlight, this.line_material_normal_depth_pass));
+
+        this.line_scene_distance_pass.add(new Line2(this.line_geometry_before_highlight, this.line_material_normal_distance_pass));
+        this.line_scene_distance_pass.add(new Line2(this.line_geometry_highlight, this.line_material_highlight_distance_pass));
+        this.line_scene_distance_pass.add(new Line2(this.line_geometry_after_highlight, this.line_material_normal_distance_pass));
+
+        this.scene.add(new Line2(this.line_geometry_before_highlight, this.line_material_normal));
+        this.scene.add(new Line2(this.line_geometry_highlight, this.line_material_highlight));
+        this.scene.add(new Line2(this.line_geometry_after_highlight, this.line_material_normal));
         
         if (this.props.selected_time != null)
         {
@@ -216,15 +267,15 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
             let end_time=this.props.selected_time[1];
             let start_index = range_start(this.props.times, start_time);
             let end_index = range_end(this.props.times, end_time);
-            this.line_before_highlight.geometry.setLineGeometry(g, 0, start_index);
-            this.line_highlight.geometry.setLineGeometry(g, start_index, end_index);
-            this.line_after_highlight.geometry.setLineGeometry(g, end_index);
+            this.line_geometry_before_highlight.setLineGeometry(g, 0, start_index);
+            this.line_geometry_highlight.setLineGeometry(g, start_index, end_index);
+            this.line_geometry_after_highlight.setLineGeometry(g, end_index);
         }
         else
         {
-            this.line_before_highlight.geometry.setLineGeometry(g, 0, 0);
-            this.line_highlight.geometry.setLineGeometry(g);
-            this.line_after_highlight.geometry.setLineGeometry(g, 0, 0);
+            this.line_geometry_before_highlight.setLineGeometry(g, 0, 0);
+            this.line_geometry_highlight.setLineGeometry(g);
+            this.line_geometry_after_highlight.setLineGeometry(g, 0, 0);
         }
     }
 
@@ -236,6 +287,24 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         var plate = new THREE.Mesh(geometry, material);
         plate.position.set(d.x_mid, d.y_mid, -thickness/2);
         scene.add(plate);
+    }
+
+    createLineRenderTarget() {
+        var drawSize = new Vector2();
+        this.renderer.getDrawingBufferSize(drawSize);
+
+        var target = new THREE.WebGLRenderTarget(drawSize.x, drawSize.y);
+        target.texture.format = THREE.RGBFormat;
+        target.texture.type = THREE.FloatType;
+        target.texture.minFilter = THREE.NearestFilter;
+        target.texture.magFilter = THREE.NearestFilter;
+        target.texture.generateMipmaps = false;
+        target.stencilBuffer = false;
+        target.depthBuffer = false;
+        target.depthTexture = new THREE.DepthTexture(drawSize.x, drawSize.y);
+        target.depthTexture.format = THREE.DepthFormat;
+        target.depthTexture.type = THREE.UnsignedShortType;
+        this.line_render_target = target;
     }
 
     tryToRefocus=()=> {
