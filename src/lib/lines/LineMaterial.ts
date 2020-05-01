@@ -26,15 +26,12 @@ import {
     FloatType,
     LinearFilter,
     CustomBlending,
-    NormalBlending,
     SrcAlphaFactor,
     DstAlphaFactor,
     MinEquation,
     NoBlending,
     Shader,
     WebGLRenderer,
-    Line,
-    Material,
     Texture,
 } from "three";
 
@@ -219,10 +216,32 @@ ShaderLib[ 'line' ] = {
                 // project the worldpos
                 vec4 clip = projectionMatrix * worldPos;
 
+                #ifdef DEPTH_PASS
                 // shift the depth of the projected points so the line
                 // segements overlap neatly
-                vec3 clipPose = ( position.y < 0.5 ) ? ndcStart : ndcEnd;
-                clip.z = clipPose.z * clip.w;
+                    #ifdef MOVE_DEPTH_BACK
+                        vec3 worldPose = (position.y < 0.5 ) ? worldStart : worldEnd;
+                        worldPose.z -= 0.5*linewidth;
+                        vec4 clipShifted = projectionMatrix*vec4(worldPose,1.0);
+                        clip.z = clipShifted.z;
+                    #else
+                        vec4 clipPose = ( position.y < 0.5 ) ? clipStart : clipEnd;
+                        clip.z = clipPose.z;
+                    #endif
+                #else
+                    // shift the depth of the projected points so the line
+                    // segements overlap neatly
+                    
+                    #ifdef MOVE_DEPTH_BACK
+                        vec4 clipPose = ( position.y < 0.5 ) ? clipStart : clipEnd;
+                        clip.z = clipPose.z;
+                    #else
+                        vec3 worldPose = (position.y < 0.5 ) ? worldStart : worldEnd;
+                        worldPose.z += 0.5*linewidth;
+                        vec4 clipShifted = projectionMatrix*vec4(worldPose,1.0);
+                        clip.z = clipShifted.z;
+                    #endif
+                #endif
 
             #else
 
@@ -259,9 +278,6 @@ ShaderLib[ 'line' ] = {
 
                 clip.xy += offset;
 
-            #endif
-            #ifdef DEPTH_PASS
-            clip.z += 0.001;
             #endif
 
             gl_Position = clip;
@@ -406,10 +422,10 @@ ShaderLib[ 'line' ] = {
                 gl_FragColor = vec4(diffuseColor.rgb, 1);
             #endif
             #ifdef DISTANCE_PASS
-                gl_FragColor = vec4( norm / 0.5, 0, 0, 1);
+                gl_FragColor = vec4( norm / 0.5, 0, 0, 1.0);
             #endif
             #ifdef DEPTH_PASS 
-                gl_FragColor = vec4(1.0, 0, 0, 1);
+                gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
             #endif
 
             #include <premultiplied_alpha_fragment>
@@ -569,6 +585,7 @@ export class LineMaterial extends ShaderMaterial {
             this.defines.DEPTH_PASS = "";
             this.blending = NoBlending;
             this.depthWrite = true;
+            this.depthTest = true;
         }
         else if (this.pass == LinePass.Distance) {
             this.defines.DISTANCE_PASS = "";
@@ -577,11 +594,14 @@ export class LineMaterial extends ShaderMaterial {
             this.blendSrc = SrcAlphaFactor;
             this.blendDst = DstAlphaFactor;
             this.depthWrite = false;
+            this.depthTest = true;
+
         }
         else {
             this.defines.NORMAL_PASS = "";
             this.depthWrite = true;
-            this.blending = NormalBlending;
+            this.depthTest = true;
+            this.blending = NoBlending;
         }
     }
 

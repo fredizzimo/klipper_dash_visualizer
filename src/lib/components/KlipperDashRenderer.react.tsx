@@ -65,11 +65,12 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         this.scene = scene;
         this.line_scene_depth_pass = new THREE.Scene();
         this.line_scene_distance_pass = new THREE.Scene();
-        var camera = new THREE.PerspectiveCamera( 75, 2, 0.01, 1000 );
+        var camera = new THREE.PerspectiveCamera( 75, 2, 1, 1000 );
         var renderer = new THREE.WebGLRenderer({
             canvas: this.myRef.current,
             alpha: true
         });
+        renderer.sortObjects = false;
         this.renderer = renderer;
         renderer.setPixelRatio(window.devicePixelRatio);
         var background_color = tinycolor(window.getComputedStyle(this.myRef.current).getPropertyValue("background-color"));
@@ -257,10 +258,21 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         this.line_scene_distance_pass.add(new Line2(this.line_geometry_highlight, this.line_material_highlight_distance_pass));
         this.line_scene_distance_pass.add(new Line2(this.line_geometry_after_highlight, this.line_material_normal_distance_pass));
 
-        this.scene.add(new Line2(this.line_geometry_before_highlight, this.line_material_normal));
-        this.scene.add(new Line2(this.line_geometry_highlight, this.line_material_highlight));
-        this.scene.add(new Line2(this.line_geometry_after_highlight, this.line_material_normal));
-        
+        const debug_depth_distance = false;
+        if (debug_depth_distance) {
+            this.scene.add(new Line2(this.line_geometry_before_highlight, this.line_material_normal_depth_pass));
+            this.scene.add(new Line2(this.line_geometry_highlight, this.line_material_highlight_depth_pass));
+            this.scene.add(new Line2(this.line_geometry_after_highlight, this.line_material_normal_depth_pass));
+
+            this.scene.add(new Line2(this.line_geometry_before_highlight, this.line_material_normal_distance_pass));
+            this.scene.add(new Line2(this.line_geometry_highlight, this.line_material_highlight_distance_pass));
+            this.scene.add(new Line2(this.line_geometry_after_highlight, this.line_material_normal_distance_pass));
+        } else {
+            this.scene.add(new Line2(this.line_geometry_before_highlight, this.line_material_normal));
+            this.scene.add(new Line2(this.line_geometry_highlight, this.line_material_highlight));
+            this.scene.add(new Line2(this.line_geometry_after_highlight, this.line_material_normal));
+        }
+
         if (this.props.selected_time != null)
         {
             let start_time=this.props.selected_time[0];
@@ -303,7 +315,7 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         target.depthBuffer = false;
         target.depthTexture = new THREE.DepthTexture(drawSize.x, drawSize.y);
         target.depthTexture.format = THREE.DepthFormat;
-        target.depthTexture.type = THREE.UnsignedShortType;
+        target.depthTexture.type = THREE.UnsignedIntType;
         this.line_render_target = target;
     }
 
