@@ -322,7 +322,7 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         target.texture.magFilter = THREE.NearestFilter;
         target.texture.generateMipmaps = false;
         target.stencilBuffer = false;
-        target.depthBuffer = false;
+        target.depthBuffer = true;
         target.depthTexture = this.main_render_target.depthTexture;
         this.line_render_target = target;
     }
@@ -338,7 +338,7 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         target.texture.magFilter = THREE.NearestFilter;
         target.texture.generateMipmaps = false;
         target.stencilBuffer = false;
-        target.depthBuffer = false;
+        target.depthBuffer = true;
         target.depthTexture = new THREE.DepthTexture(drawSize.x, drawSize.y);
         target.depthTexture.format = THREE.DepthFormat;
         target.depthTexture.type = THREE.UnsignedIntType;
