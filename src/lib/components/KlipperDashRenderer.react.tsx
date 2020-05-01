@@ -31,8 +31,10 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
     private myRef = React.createRef<HTMLCanvasElement>();
     private controls: OrbitControls;
     private camera: THREE.PerspectiveCamera;
+    private post_camera: THREE.OrthographicCamera;
     private renderer: THREE.WebGLRenderer;
     private scene: THREE.Scene;
+    private post_scene: THREE.Scene;
     private line_scene_depth_pass: THREE.Scene;
     private line_scene_distance_pass: THREE.Scene;
     private line_geometry: LineGeometry;
@@ -46,6 +48,7 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
     private line_geometry_highlight: LineSegmentsGeometry;
     private line_geometry_after_highlight: LineSegmentsGeometry;
     private line_render_target: THREE.WebGLRenderTarget;
+    private main_render_target: THREE.WebGLRenderTarget;
 
     constructor(props: KlipperDashRendererProps) {
         super(props)
@@ -76,10 +79,13 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         var background_color = tinycolor(window.getComputedStyle(this.myRef.current).getPropertyValue("background-color"));
         var buildplate_color = tinycolor(window.getComputedStyle(this.myRef.current).getPropertyValue("--buildplate-color"));
         renderer.setClearColor(background_color.toHexString(), background_color.getAlpha());
+        this.createMainRenderTarget();
         this.createLineRenderTarget();
 
         this.add_lines();
         this.add_build_plate(scene, buildplate_color);
+
+        this.createPostScene();
 
         var d = this.calculate_dimensions()
         // Note slightly backwards in the y direction, so that the plate as the the right orientation
@@ -105,9 +111,13 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         this.renderer.render(this.line_scene_depth_pass, this.camera);
         this.renderer.render(this.line_scene_distance_pass, this.camera);
 
+        this.renderer.setRenderTarget(this.main_render_target);
+        this.renderer.clear(true, false, false);
+        this.renderer.render(this.scene, this.camera);
+
         this.renderer.setRenderTarget(null);
         this.renderer.clear(true, true, true);
-        this.renderer.render(this.scene, this.camera);
+        this.renderer.render(this.post_scene, this.post_camera);
     }
 
     resize() {
@@ -125,16 +135,16 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
             camera.updateProjectionMatrix();
             renderer.setSize(clientWidth, clientHeight, false);
             this.update_line_resolution();
+
             var drawSize = new Vector2();
             this.renderer.getDrawingBufferSize(drawSize);
             drawSize.max(new Vector2(128, 128));
+            this.main_render_target.setSize( drawSize.x, drawSize.y);
+            this.main_render_target.depthTexture.image.width = drawSize.x;
+            this.main_render_target.depthTexture.image.height = drawSize.y;
             this.line_render_target.setSize( drawSize.x, drawSize.y);
-            if (this.line_render_target.depthTexture != null) {
-                this.line_render_target.depthTexture.image.width = drawSize.x;
-                this.line_render_target.depthTexture.image.height = drawSize.y;
             }
         }
-    }
 
     calculate_dimensions=()=> {
         var x_dim = this.props.printer_dimensions[0];
@@ -313,10 +323,39 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         target.texture.generateMipmaps = false;
         target.stencilBuffer = false;
         target.depthBuffer = false;
+        target.depthTexture = this.main_render_target.depthTexture;
+        this.line_render_target = target;
+    }
+
+    createMainRenderTarget() {
+        var drawSize = new Vector2();
+        this.renderer.getDrawingBufferSize(drawSize);
+
+        var target = new THREE.WebGLRenderTarget(drawSize.x, drawSize.y);
+        target.texture.format = THREE.RGBAFormat;
+        target.texture.type = THREE.UnsignedByteType;
+        target.texture.minFilter = THREE.NearestFilter;
+        target.texture.magFilter = THREE.NearestFilter;
+        target.texture.generateMipmaps = false;
+        target.stencilBuffer = false;
+        target.depthBuffer = false;
         target.depthTexture = new THREE.DepthTexture(drawSize.x, drawSize.y);
         target.depthTexture.format = THREE.DepthFormat;
         target.depthTexture.type = THREE.UnsignedIntType;
-        this.line_render_target = target;
+        this.main_render_target = target;
+    }
+
+    createPostScene() {
+        var scene = new THREE.Scene();
+       	var material = new THREE.MeshBasicMaterial( {
+               map: this.main_render_target.texture,
+        } );
+
+        var quad = new THREE.Mesh(new THREE.PlaneBufferGeometry(2, 2), material);
+        quad.frustumCulled = false;
+        scene.add(quad); 
+        this.post_scene = scene;
+        this.post_camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     }
 
     tryToRefocus=()=> {
