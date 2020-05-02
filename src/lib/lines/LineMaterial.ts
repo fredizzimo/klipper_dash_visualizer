@@ -216,33 +216,18 @@ ShaderLib[ 'line' ] = {
                 // project the worldpos
                 vec4 clip = projectionMatrix * worldPos;
 
-                #ifdef DEPTH_PASS
                 // shift the depth of the projected points so the line
                 // segements overlap neatly
-                    #ifdef MOVE_DEPTH_BACK
-                        vec3 worldPose = (position.y < 0.5 ) ? worldStart : worldEnd;
-                        worldPose.z -= 0.5*linewidth;
-                        vec4 clipShifted = projectionMatrix*vec4(worldPose,1.0);
-                        clip.z = clipShifted.z;
-                    #else
-                        vec4 clipPose = ( position.y < 0.5 ) ? clipStart : clipEnd;
-                        clip.z = clipPose.z;
-                    #endif
+                #ifdef DEPTH_PASS
+                    vec3 clipPose = ( position.y < 0.5 ) ? ndcStart : ndcEnd;
                 #else
-                    // shift the depth of the projected points so the line
-                    // segements overlap neatly
-                    
-                    #ifdef MOVE_DEPTH_BACK
-                        vec4 clipPose = ( position.y < 0.5 ) ? clipStart : clipEnd;
-                        clip.z = clipPose.z;
-                    #else
-                        vec3 worldPose = (position.y < 0.5 ) ? worldStart : worldEnd;
-                        worldPose.z += 0.5*linewidth;
-                        vec4 clipShifted = projectionMatrix*vec4(worldPose,1.0);
-                        clip.z = clipShifted.z;
-                    #endif
+                    // If not depth pass, shift them forward by the line radius
+                    vec3 worldPose = (position.y < 0.5 ) ? worldStart : worldEnd;
+                    worldPose.z += 0.5*linewidth;
+                    vec4 clipPose = projectionMatrix*vec4(worldPose, 1.0);
+                    clipPose /= clipPose.w;
                 #endif
-
+                clip.z = clipPose.z * clip.w;
             #else
 
                 vec2 offset = vec2( dir.y, - dir.x );
