@@ -1,5 +1,6 @@
 import numpy as np
 from colormap import turbo_color_map
+from ramer_douglas_peucker import rdp
 
 def calculate_velocities_and_accelerations(times, positions):
     length = times.shape[0]
@@ -188,6 +189,7 @@ class DataGenerator(object):
 
         self.times, self.spatial_coordinates = self.generate_spatial_coordinates(parser)
         self.velocities, self.accelerations = self.generate_velocities_and_accelerations()
+        self.culled_coordinates = self.cull_spatial_coordinates()
         self.speed_colors = generate_speed_colors(self.velocities)
         pass
 
@@ -213,3 +215,8 @@ class DataGenerator(object):
         distances = np.cumsum(distances)
         velocities, accelerations = calculate_velocities_and_accelerations(self.times, distances)
         return velocities, accelerations
+
+    def cull_spatial_coordinates(self):
+        return rdp(self.times, self.spatial_coordinates, 1.0)
+        pass
+

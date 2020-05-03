@@ -23,10 +23,10 @@ class DashApp(object):
                     figure=main_plot(data),
                 )
             ],
-            vertices=data.spatial_coordinates.ravel(),
-            velocities=data.velocities.ravel(),
+            vertices=data.spatial_coordinates[data.culled_coordinates,:].flatten(),
+            velocities=data.velocities[data.culled_coordinates].flatten(),
             printer_dimensions=printer_dimensions,
-            times=data.times
+            times=data.times[data.culled_coordinates]
         )
 
         app.clientside_callback(
