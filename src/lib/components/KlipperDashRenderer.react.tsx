@@ -72,7 +72,7 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         var renderer = new THREE.WebGLRenderer({
             canvas: this.myRef.current,
             alpha: true,
-            logarithmicDepthBuffer: false,
+            logarithmicDepthBuffer: true,
         });
         renderer.sortObjects = false;
         this.renderer = renderer;
