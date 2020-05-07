@@ -68,11 +68,11 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         this.scene = scene;
         this.line_scene_depth_pass = new THREE.Scene();
         this.line_scene_distance_pass = new THREE.Scene();
-        var camera = new THREE.PerspectiveCamera(75, 2, 0.001, 1000);
+        var camera = new THREE.PerspectiveCamera(75, 2, 0.01, 1000);
         var renderer = new THREE.WebGLRenderer({
             canvas: this.myRef.current,
             alpha: true,
-            logarithmicDepthBuffer: true,
+            logarithmicDepthBuffer: false
         });
         renderer.sortObjects = false;
         this.renderer = renderer;
@@ -330,8 +330,8 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         target.stencilBuffer = false;
         target.depthBuffer = true;
         target.depthTexture = new THREE.DepthTexture(drawSize.x, drawSize.y);
-        target.depthTexture.format = THREE.DepthFormat;
-        target.depthTexture.type = THREE.UnsignedIntType;
+        target.depthTexture.format = THREE.DepthStencilFormat;
+        target.depthTexture.type = THREE.UnsignedInt248Type;
         this.main_render_target = target;
     }
 

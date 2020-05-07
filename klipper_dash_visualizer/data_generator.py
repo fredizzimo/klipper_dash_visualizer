@@ -217,6 +217,6 @@ class DataGenerator(object):
         return velocities, accelerations
 
     def cull_spatial_coordinates(self):
-        return rdp(self.times, self.spatial_coordinates, 1.0)
+        return rdp(self.times, self.spatial_coordinates, 0.01)
         pass
 
