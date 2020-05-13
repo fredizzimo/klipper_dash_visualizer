@@ -9,7 +9,7 @@ import { LineGeometry } from "../lines/LineGeometry";
 import { LineSegmentsGeometry } from "../lines/LineSegmentsGeometry";
 import { ExtrusionGeometry } from "./ExtrusionGeometry";
 import {range_start, range_end} from "../helpers"
-import { Vector2, MeshBasicMaterial, Color, Mesh } from "three";
+import { Vector2, MeshBasicMaterial, Color, Mesh, MeshPhongMaterial } from "three";
 
 type KlipperDashRendererProps =
 {
@@ -71,6 +71,19 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
     componentDidMount() {
         var scene = new THREE.Scene();
         this.scene = scene;
+        let ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+
+        let addDirectionalLight = function(x: number, y: number, z: number) {
+            let directionalLight = new THREE.DirectionalLight(0xFFFFFF, 0.5);
+            directionalLight.position.set(x, y, z);
+            scene.add(directionalLight);
+        }
+        addDirectionalLight(1000, 1000, 1000);
+        addDirectionalLight(1000, -1000, 1000);
+        addDirectionalLight(-1000, 1000, 1000);
+        addDirectionalLight(-1000, -1000, 1000);
+
         this.line_scene_depth_pass = new THREE.Scene();
         this.line_scene_distance_pass = new THREE.Scene();
         var camera = new THREE.PerspectiveCamera(75, 2, 0.01, 1000);
@@ -187,7 +200,7 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
 
     add_lines() {
         this.extrusion_geometry = new ExtrusionGeometry(this.props.vertices, 0.4, 0.4);
-        this.extrusion_material = new MeshBasicMaterial({
+        this.extrusion_material = new MeshPhongMaterial({
             color: 0xFF0000,
         });
         var extrusion_mesh = new Mesh(this.extrusion_geometry, this.extrusion_material);
