@@ -1,15 +1,9 @@
 import React, {Component} from "react";
-import ReactDOM from "react-dom"
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 import tinycolor from "tinycolor2"
-import { Line2 } from "../lines/Line2";
-import { LineMaterial, LinePass } from "../lines/LineMaterial";
-import { LineGeometry } from "../lines/LineGeometry";
-import { LineSegmentsGeometry } from "../lines/LineSegmentsGeometry";
 import { ExtrusionGeometry } from "./ExtrusionGeometry";
-import {range_start, range_end} from "../helpers"
-import { Vector2, MeshBasicMaterial, Color, Mesh, MeshPhongMaterial } from "three";
+import { Vector2, MeshBasicMaterial, Mesh, MeshPhongMaterial } from "three";
 
 type KlipperDashRendererProps =
 {
@@ -36,23 +30,10 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
     private renderer: THREE.WebGLRenderer;
     private scene: THREE.Scene;
     private post_scene: THREE.Scene;
-    private line_scene_depth_pass: THREE.Scene;
-    private line_scene_distance_pass: THREE.Scene;
 
     private extrusion_geometry: ExtrusionGeometry
     private extrusion_material: MeshBasicMaterial
 
-    private line_geometry: LineGeometry;
-    private line_material_normal: LineMaterial;
-    private line_material_highlight: LineMaterial;
-    private line_material_normal_depth_pass: LineMaterial;
-    private line_material_highlight_depth_pass: LineMaterial;
-    private line_material_normal_distance_pass: LineMaterial;
-    private line_material_highlight_distance_pass: LineMaterial;
-    private line_geometry_before_highlight: LineSegmentsGeometry;
-    private line_geometry_highlight: LineSegmentsGeometry;
-    private line_geometry_after_highlight: LineSegmentsGeometry;
-    private line_render_target: THREE.WebGLRenderTarget;
     private main_render_target: THREE.WebGLRenderTarget;
 
     constructor(props: KlipperDashRendererProps) {
@@ -61,7 +42,7 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
 
     componentDidUpdate(prevProps: KlipperDashRendererProps, prevState: KlipperDashRendererState) {
         if (this.props.selected_time != prevProps.selected_time) {
-            this.update_line_segments()
+            // TODO: Update selection
         }
         if (this.props.active) {
             this.myRef.current.focus();
@@ -84,8 +65,6 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         addDirectionalLight(-1000, 1000, 1000);
         addDirectionalLight(-1000, -1000, 1000);
 
-        this.line_scene_depth_pass = new THREE.Scene();
-        this.line_scene_distance_pass = new THREE.Scene();
         var camera = new THREE.PerspectiveCamera(75, 2, 0.01, 1000);
         var renderer = new THREE.WebGLRenderer({
             canvas: this.myRef.current,
@@ -125,13 +104,9 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         requestAnimationFrame(this.animate);
         this.controls.update()
         this.renderer.autoClear = false;
-        this.renderer.setRenderTarget(this.line_render_target);
-        this.renderer.clear(true, true, true);
-        //this.renderer.render(this.line_scene_depth_pass, this.camera);
-        //this.renderer.render(this.line_scene_distance_pass, this.camera);
 
         this.renderer.setRenderTarget(this.main_render_target);
-        this.renderer.clear(true, false, false);
+        this.renderer.clear(true, true, true);
         this.renderer.render(this.scene, this.camera);
 
         this.renderer.setRenderTarget(null);
@@ -153,7 +128,6 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
             camera.aspect = clientWidth / clientHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(clientWidth, clientHeight, false);
-            this.update_line_resolution();
 
             var drawSize = new Vector2();
             this.renderer.getDrawingBufferSize(drawSize);
@@ -161,7 +135,6 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
             this.main_render_target.setSize( drawSize.x, drawSize.y);
             this.main_render_target.depthTexture.image.width = drawSize.x;
             this.main_render_target.depthTexture.image.height = drawSize.y;
-            this.line_render_target.setSize( drawSize.x, drawSize.y);
             }
         }
 
@@ -205,118 +178,6 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         });
         var extrusion_mesh = new Mesh(this.extrusion_geometry, this.extrusion_material);
         this.scene.add(extrusion_mesh);
-
-
-        var geometry = new LineGeometry();
-        geometry.setPositions(this.props.vertices);
-        geometry.setColors(this.props.velocities)
-        this.line_geometry = geometry;
-
-        this.line_material_normal = new LineMaterial({
-            color: 0xFFFFFF,
-            worldUnits: true,
-            linewidth: 0.001,
-            segmentColors: true,
-            dashed: false
-        });
-        this.line_material_highlight = new LineMaterial({
-            color: 0xFFFFFF,
-            worldUnits: true,
-            linewidth: 0.4,
-            segmentColors: true,
-            dashed: false
-        });
-
-        this.line_material_normal_depth_pass = this.line_material_normal.clone();
-        this.line_material_normal_depth_pass.pass = LinePass.Depth;
-        this.line_material_highlight_depth_pass = this.line_material_highlight.clone();
-        this.line_material_highlight_depth_pass.pass = LinePass.Depth;
-
-        this.line_material_normal_distance_pass = this.line_material_normal.clone();
-        this.line_material_normal_distance_pass.pass = LinePass.Distance;
-        this.line_material_highlight_distance_pass = this.line_material_highlight.clone();
-        this.line_material_highlight_distance_pass.pass = LinePass.Distance;
-
-        this.line_material_normal.distanceMap = this.line_render_target.texture;
-        this.line_material_highlight.distanceMap = this.line_render_target.texture;
-
-        this.update_line_segments()
-        this.update_line_resolution();
-    }
-
-    update_line_resolution() {
-        var drawSize = new Vector2();
-        this.renderer.getDrawingBufferSize(drawSize);
-        this.line_material_normal.resolution.set(drawSize.x, drawSize.y);
-        this.line_material_highlight.resolution.set(drawSize.x, drawSize.y);
-        this.line_material_normal_depth_pass.resolution.set(drawSize.x, drawSize.y);
-        this.line_material_highlight_depth_pass.resolution.set(drawSize.x, drawSize.y);
-        this.line_material_normal_distance_pass.resolution.set(drawSize.x, drawSize.y);
-        this.line_material_highlight_distance_pass.resolution.set(drawSize.x, drawSize.y);
-    }
-
-    update_line_segments() {
-        var g = this.line_geometry;
-
-        var dispose_geometry = function(geometry: LineSegmentsGeometry) {
-            if (geometry != null) {
-                geometry.dispose();
-            }
-        }
-        // TODO create separate line classes so that this can be generalized wihtout code duplication
-
-        dispose_geometry(this.line_geometry_before_highlight);
-        dispose_geometry(this.line_geometry_highlight);
-        dispose_geometry(this.line_geometry_after_highlight);
-
-        this.line_geometry_before_highlight = new LineSegmentsGeometry();
-        this.line_geometry_highlight = new LineSegmentsGeometry();
-        this.line_geometry_after_highlight = new LineSegmentsGeometry();
-
-        var clear_scene = function(scene: THREE.Scene) {
-            var toRemove = []
-            for (var i = 0;i<scene.children.length;i++) {
-                if (scene.children[i] instanceof Line2) {
-                    toRemove.push(scene.children[i]);
-                }
-            }
-            scene.remove(...toRemove);
-        }
-
-        clear_scene(this.line_scene_depth_pass);
-        clear_scene(this.line_scene_distance_pass);
-        clear_scene(this.scene);
-
-        this.line_scene_depth_pass.add(new Line2(this.line_geometry_before_highlight, this.line_material_normal_depth_pass));
-        this.line_scene_depth_pass.add(new Line2(this.line_geometry_highlight, this.line_material_highlight_depth_pass));
-        this.line_scene_depth_pass.add(new Line2(this.line_geometry_after_highlight, this.line_material_normal_depth_pass));
-
-        this.line_scene_distance_pass.add(new Line2(this.line_geometry_before_highlight, this.line_material_normal_distance_pass));
-        this.line_scene_distance_pass.add(new Line2(this.line_geometry_highlight, this.line_material_highlight_distance_pass));
-        this.line_scene_distance_pass.add(new Line2(this.line_geometry_after_highlight, this.line_material_normal_distance_pass));
-
-        if (false) {
-            this.scene.add(new Line2(this.line_geometry_before_highlight, this.line_material_normal));
-            this.scene.add(new Line2(this.line_geometry_highlight, this.line_material_highlight));
-            this.scene.add(new Line2(this.line_geometry_after_highlight, this.line_material_normal));
-        }
-
-        if (this.props.selected_time != null)
-        {
-            let start_time=this.props.selected_time[0];
-            let end_time=this.props.selected_time[1];
-            let start_index = range_start(this.props.times, start_time);
-            let end_index = range_end(this.props.times, end_time);
-            this.line_geometry_before_highlight.setLineGeometry(g, 0, start_index);
-            this.line_geometry_highlight.setLineGeometry(g, start_index, end_index);
-            this.line_geometry_after_highlight.setLineGeometry(g, end_index);
-        }
-        else
-        {
-            this.line_geometry_before_highlight.setLineGeometry(g, 0, 0);
-            this.line_geometry_highlight.setLineGeometry(g);
-            this.line_geometry_after_highlight.setLineGeometry(g, 0, 0);
-        }
     }
 
     add_build_plate=(scene: THREE.Scene, buildplate_color: tinycolor.Instance)=> {
@@ -342,7 +203,6 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         target.stencilBuffer = false;
         target.depthBuffer = true;
         target.depthTexture = this.main_render_target.depthTexture;
-        this.line_render_target = target;
     }
 
     createMainRenderTarget() {
