@@ -7,8 +7,9 @@ import { Line2 } from "../lines/Line2";
 import { LineMaterial, LinePass } from "../lines/LineMaterial";
 import { LineGeometry } from "../lines/LineGeometry";
 import { LineSegmentsGeometry } from "../lines/LineSegmentsGeometry";
+import { ExtrusionGeometry } from "./ExtrusionGeometry";
 import {range_start, range_end} from "../helpers"
-import { Vector2 } from "three";
+import { Vector2, MeshBasicMaterial, Color, Mesh } from "three";
 
 type KlipperDashRendererProps =
 {
@@ -37,6 +38,10 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
     private post_scene: THREE.Scene;
     private line_scene_depth_pass: THREE.Scene;
     private line_scene_distance_pass: THREE.Scene;
+
+    private extrusion_geometry: ExtrusionGeometry
+    private extrusion_material: MeshBasicMaterial
+
     private line_geometry: LineGeometry;
     private line_material_normal: LineMaterial;
     private line_material_highlight: LineMaterial;
@@ -109,8 +114,8 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         this.renderer.autoClear = false;
         this.renderer.setRenderTarget(this.line_render_target);
         this.renderer.clear(true, true, true);
-        this.renderer.render(this.line_scene_depth_pass, this.camera);
-        this.renderer.render(this.line_scene_distance_pass, this.camera);
+        //this.renderer.render(this.line_scene_depth_pass, this.camera);
+        //this.renderer.render(this.line_scene_distance_pass, this.camera);
 
         this.renderer.setRenderTarget(this.main_render_target);
         this.renderer.clear(true, false, false);
@@ -181,6 +186,14 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
     }
 
     add_lines() {
+        this.extrusion_geometry = new ExtrusionGeometry(this.props.vertices, 0.4, 0.4);
+        this.extrusion_material = new MeshBasicMaterial({
+            color: 0xFF0000,
+        });
+        var extrusion_mesh = new Mesh(this.extrusion_geometry, this.extrusion_material);
+        this.scene.add(extrusion_mesh);
+
+
         var geometry = new LineGeometry();
         geometry.setPositions(this.props.vertices);
         geometry.setColors(this.props.velocities)
@@ -269,9 +282,11 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         this.line_scene_distance_pass.add(new Line2(this.line_geometry_highlight, this.line_material_highlight_distance_pass));
         this.line_scene_distance_pass.add(new Line2(this.line_geometry_after_highlight, this.line_material_normal_distance_pass));
 
+        if (false) {
             this.scene.add(new Line2(this.line_geometry_before_highlight, this.line_material_normal));
             this.scene.add(new Line2(this.line_geometry_highlight, this.line_material_highlight));
             this.scene.add(new Line2(this.line_geometry_after_highlight, this.line_material_normal));
+        }
 
         if (this.props.selected_time != null)
         {
