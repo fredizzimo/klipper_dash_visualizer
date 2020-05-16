@@ -2,7 +2,7 @@ import {
    BufferGeometry, Vector3, Line3, Uint32BufferAttribute, Float32BufferAttribute, Uint8BufferAttribute, Color
 } from "three";
 
-import {interpolate_turbo_color_range} from "./turbo_colormap"
+import {interpolateTurboColorRange} from "./turbo_colormap"
 
 
 export class ExtrusionGeometry extends BufferGeometry
@@ -135,8 +135,8 @@ export class ExtrusionGeometry extends BufferGeometry
             const velocity_a = velocities[i];
             const velocity_b = velocities[i+1];
             const max_velocity = 100;
-            const color_a = new Color(...interpolate_turbo_color_range(velocity_a, 0, max_velocity));
-            const color_b = new Color(...interpolate_turbo_color_range(velocity_b, 0, max_velocity));
+            const color_a = new Color(...interpolateTurboColorRange(velocity_a, 0, max_velocity));
+            const color_b = new Color(...interpolateTurboColorRange(velocity_b, 0, max_velocity));
                         
             const z_different = (z_prev != l_a.z);
             z_prev = l_b.z;

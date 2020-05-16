@@ -23,7 +23,7 @@ type KlipperDashRendererState =
 export default class KlipperDashRenderer extends Component<KlipperDashRendererProps, KlipperDashRendererState> {
     static defaultProps = {
     }
-    private myRef = React.createRef<HTMLCanvasElement>();
+    private canvas = React.createRef<HTMLCanvasElement>();
     private controls: OrbitControls;
     private camera: THREE.PerspectiveCamera;
     private post_camera: THREE.OrthographicCamera;
@@ -45,12 +45,12 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
             // TODO: Update selection
         }
         if (this.props.active) {
-            this.myRef.current.focus();
+            this.canvas.current.focus();
         }
     }
 
     componentDidMount() {
-        var scene = new THREE.Scene();
+        let scene = new THREE.Scene();
         this.scene = scene;
         let ambientLight = new THREE.AmbientLight(0x404040);
         scene.add(ambientLight);
@@ -65,32 +65,32 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         addDirectionalLight(-1000, 1000, 1000);
         addDirectionalLight(-1000, -1000, 1000);
 
-        var camera = new THREE.PerspectiveCamera(75, 2, 0.01, 1000);
-        var renderer = new THREE.WebGLRenderer({
-            canvas: this.myRef.current,
+        let camera = new THREE.PerspectiveCamera(75, 2, 0.01, 1000);
+        let renderer = new THREE.WebGLRenderer({
+            canvas: this.canvas.current,
             alpha: true,
             logarithmicDepthBuffer: false
         });
         renderer.sortObjects = false;
         this.renderer = renderer;
         renderer.setPixelRatio(window.devicePixelRatio);
-        var background_color = tinycolor(window.getComputedStyle(this.myRef.current).getPropertyValue("background-color"));
-        var buildplate_color = tinycolor(window.getComputedStyle(this.myRef.current).getPropertyValue("--buildplate-color"));
+        let background_color = tinycolor(window.getComputedStyle(this.canvas.current).getPropertyValue("background-color"));
+        let buildplate_color = tinycolor(window.getComputedStyle(this.canvas.current).getPropertyValue("--buildplate-color"));
         renderer.setClearColor(background_color.toHexString(), background_color.getAlpha());
         this.createMainRenderTarget();
         this.createLineRenderTarget();
 
-        this.add_lines();
-        this.add_build_plate(scene, buildplate_color);
+        this.addLines();
+        this.addBuildPlate(scene, buildplate_color);
 
         this.createPostScene();
 
-        var d = this.calculate_dimensions()
+        let d = this.calculate_dimensions()
         // Note slightly backwards in the y direction, so that the plate as the the right orientation
         camera.position.set(d.x_mid, d.y_mid-1, d.z_end_pos + 0.5 * d.z_size);
         camera.up.set(0, 0, 1);
 
-        var controls = new OrbitControls(camera, renderer.domElement);
+        let controls = new OrbitControls(camera, renderer.domElement);
         controls.target.set(d.x_mid, d.y_mid, 0);
         controls.update();
         this.controls = controls;
@@ -115,21 +115,21 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
     }
 
     resize() {
-        var camera = this.camera;
-        var renderer = this.renderer;
-        var clientWidth = this.myRef.current.clientWidth;
-        var clientHeight = this.myRef.current.clientHeight;
-        var width = this.myRef.current.width;
-        var height = this.myRef.current.height;
-        var pixelRatio = renderer.getPixelRatio();
-        var pixel_width = Math.floor(clientWidth * pixelRatio);
-        var pixel_height = Math.floor(clientHeight * pixelRatio);
+        let camera = this.camera;
+        let renderer = this.renderer;
+        let clientWidth = this.canvas.current.clientWidth;
+        let clientHeight = this.canvas.current.clientHeight;
+        let width = this.canvas.current.width;
+        let height = this.canvas.current.height;
+        let pixelRatio = renderer.getPixelRatio();
+        let pixel_width = Math.floor(clientWidth * pixelRatio);
+        let pixel_height = Math.floor(clientHeight * pixelRatio);
         if (pixel_width != width || pixel_height != height) {
             camera.aspect = clientWidth / clientHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(clientWidth, clientHeight, false);
 
-            var drawSize = new Vector2();
+            let drawSize = new Vector2();
             this.renderer.getDrawingBufferSize(drawSize);
             drawSize.max(new Vector2(128, 128));
             this.main_render_target.setSize( drawSize.x, drawSize.y);
@@ -139,22 +139,22 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         }
 
     calculate_dimensions=()=> {
-        var x_dim = this.props.printer_dimensions[0];
-        var y_dim = this.props.printer_dimensions[1];
-        var z_dim = this.props.printer_dimensions[2];
+        let x_dim = this.props.printer_dimensions[0];
+        let y_dim = this.props.printer_dimensions[1];
+        let z_dim = this.props.printer_dimensions[2];
 
-        var x_size = x_dim[1] - x_dim[0];
-        var y_size = y_dim[1] - y_dim[0];
-        var z_size = z_dim[1] - z_dim[0];
-        var x_pos = y_dim[0];
-        var y_pos = y_dim[0];
-        var z_pos = z_dim[0];
-        var x_mid = x_pos + x_size / 2;
-        var y_mid = y_pos + y_size / 2;
-        var z_mid = z_pos + z_size / 2;
-        var x_end_pos = x_pos + x_size;
-        var y_end_pos = y_pos + y_size;
-        var z_end_pos = z_pos + z_size;
+        let x_size = x_dim[1] - x_dim[0];
+        let y_size = y_dim[1] - y_dim[0];
+        let z_size = z_dim[1] - z_dim[0];
+        let x_pos = y_dim[0];
+        let y_pos = y_dim[0];
+        let z_pos = z_dim[0];
+        let x_mid = x_pos + x_size / 2;
+        let y_mid = y_pos + y_size / 2;
+        let z_mid = z_pos + z_size / 2;
+        let x_end_pos = x_pos + x_size;
+        let y_end_pos = y_pos + y_size;
+        let z_end_pos = z_pos + z_size;
         return {
             x_size,
             y_size,
@@ -171,31 +171,31 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
         };
     }
 
-    add_lines() {
+    addLines() {
         this.extrusion_geometry = new ExtrusionGeometry(this.props.vertices, this.props.velocities, 0.4, 0.4);
         this.extrusion_material = new MeshPhongMaterial({
             color: 0xFFFFFF,
             vertexColors: true,
         });
-        var extrusion_mesh = new Mesh(this.extrusion_geometry, this.extrusion_material);
+        let extrusion_mesh = new Mesh(this.extrusion_geometry, this.extrusion_material);
         this.scene.add(extrusion_mesh);
     }
 
-    add_build_plate=(scene: THREE.Scene, buildplate_color: tinycolor.Instance)=> {
-        var d = this.calculate_dimensions()
+    addBuildPlate=(scene: THREE.Scene, buildplate_color: tinycolor.Instance)=> {
+        let d = this.calculate_dimensions()
         const thickness = 2
-        var geometry = new THREE.BoxGeometry(d.x_size, d.y_size, thickness);
-        var material = new THREE.MeshBasicMaterial({color: buildplate_color.toHexString()});
-        var plate = new THREE.Mesh(geometry, material);
+        let geometry = new THREE.BoxGeometry(d.x_size, d.y_size, thickness);
+        let material = new THREE.MeshBasicMaterial({color: buildplate_color.toHexString()});
+        let plate = new THREE.Mesh(geometry, material);
         plate.position.set(d.x_mid, d.y_mid, -thickness/2);
         scene.add(plate);
     }
 
     createLineRenderTarget() {
-        var drawSize = new Vector2();
+        let drawSize = new Vector2();
         this.renderer.getDrawingBufferSize(drawSize);
 
-        var target = new THREE.WebGLRenderTarget(drawSize.x, drawSize.y);
+        let target = new THREE.WebGLRenderTarget(drawSize.x, drawSize.y);
         target.texture.format = THREE.RGBFormat;
         target.texture.type = THREE.FloatType;
         target.texture.minFilter = THREE.NearestFilter;
@@ -207,10 +207,10 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
     }
 
     createMainRenderTarget() {
-        var drawSize = new Vector2();
+        let drawSize = new Vector2();
         this.renderer.getDrawingBufferSize(drawSize);
 
-        var target = new THREE.WebGLRenderTarget(drawSize.x, drawSize.y);
+        let target = new THREE.WebGLRenderTarget(drawSize.x, drawSize.y);
         target.texture.format = THREE.RGBAFormat;
         target.texture.type = THREE.UnsignedByteType;
         target.texture.minFilter = THREE.NearestFilter;
@@ -225,12 +225,12 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
     }
 
     createPostScene() {
-        var scene = new THREE.Scene();
-       	var material = new THREE.MeshBasicMaterial( {
+        let scene = new THREE.Scene();
+       	let material = new THREE.MeshBasicMaterial( {
                map: this.main_render_target.texture,
         } );
 
-        var quad = new THREE.Mesh(new THREE.PlaneBufferGeometry(2, 2), material);
+        let quad = new THREE.Mesh(new THREE.PlaneBufferGeometry(2, 2), material);
         quad.frustumCulled = false;
         scene.add(quad); 
         this.post_scene = scene;
@@ -239,7 +239,7 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
 
     tryToRefocus=()=> {
         if (this.props.active) {
-            let element = this.myRef.current
+            let element = this.canvas.current
             setTimeout(function () { element.focus(); }, 20);
         }
     }
@@ -251,7 +251,7 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
                 onBlur={this.tryToRefocus}
             >
             <canvas
-                ref={this.myRef}/>
+                ref={this.canvas}/>
             </div>
         )
     }

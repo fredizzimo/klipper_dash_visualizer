@@ -79,13 +79,13 @@ class TabButton extends Component<TabButtonProps> {
     }
 
     render() {
-        let className = "tab-button ";
-        className += this.props.active ? "tab-button-active" : "tab-button-inactive"
+        let class_name = "tab-button ";
+        class_name += this.props.active ? "tab-button-active" : "tab-button-inactive"
 
         return (
             <div 
                 onClick={this.onClick}
-                className={className}
+                className={class_name}
             >
                 {this.props.label}
             </div>

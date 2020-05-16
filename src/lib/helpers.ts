@@ -1,4 +1,4 @@
-export function range_start(array: ArrayLike<number>, value: number)
+export function rangeStart(array: ArrayLike<number>, value: number)
 {
     var count = array.length;
     var first = 0;
@@ -22,7 +22,7 @@ export function range_start(array: ArrayLike<number>, value: number)
     return first < array.length ? first : array.length-1;
 }
 
-export function range_end(array: ArrayLike<number>, value: number)
+export function rangeEnd(array: ArrayLike<number>, value: number)
 {
     var count = array.length
     var first = 0;
@@ -42,11 +42,11 @@ export function range_end(array: ArrayLike<number>, value: number)
     return first < array.length ? first : array.length-1;
 }
 
-function get_min_max(array: ArrayLike<number>, start: number, end: number) {
+function getMinMax(array: ArrayLike<number>, start: number, end: number) {
     var min = array[0];
     var max = array[0] 
-    for (let i=start;i<end;i++) {
-        let v = array[i]
+    for (var i=start;i<end;i++) {
+        var v = array[i]
         if (v < min) {
             min = v;
         }
@@ -57,13 +57,13 @@ function get_min_max(array: ArrayLike<number>, start: number, end: number) {
     return [min, max]
 }
 
-function zoom_trace_y(xvals: ArrayLike<number>, yvals: ArrayLike<number>, start: number, end: number)
+function zoomTraceY(xvals: ArrayLike<number>, yvals: ArrayLike<number>, start: number, end: number)
 {
     if (xvals.length == 0) {
         return [-100, 100];
     }
-    var i_low = range_start(xvals, start);
-    var i_high = range_end(xvals, end);
+    var i_low = rangeStart(xvals, start);
+    var i_high = rangeEnd(xvals, end);
     var num_steps = xvals.length;
     if (i_low >= num_steps) {
         var range_low = yvals[yvals.length - 1];
@@ -72,7 +72,7 @@ function zoom_trace_y(xvals: ArrayLike<number>, yvals: ArrayLike<number>, start:
         var range_low = yvals[i_low];
         var range_high = range_low;
     } else {
-        let min_max = get_min_max(yvals, i_low, i_high+1);
+        var min_max = getMinMax(yvals, i_low, i_high+1);
         var range_low = min_max[0];
         var range_high = min_max[1]
     }
@@ -83,14 +83,14 @@ function zoom_trace_y(xvals: ArrayLike<number>, yvals: ArrayLike<number>, start:
     return [range_low, range_high];
 }
 
-export function zoom_figure_y(fig: any)
+export function zoomFigureY(fig: any)
 {
     var fig = {...fig}
     var x_range = fig.layout.xaxis.range
-    for (let i=0;i<fig.data.length;i++) {
-        let element = fig.data[i];
-        let y_range = zoom_trace_y(element.x, element.y, x_range[0], x_range[1]);
-        let axis_name = "yaxis"
+    for (var i=0;i<fig.data.length;i++) {
+        var element = fig.data[i];
+        var y_range = zoomTraceY(element.x, element.y, x_range[0], x_range[1]);
+        var axis_name = "yaxis"
         if (i > 0) {
             axis_name = axis_name + (i+1);
         }

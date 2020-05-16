@@ -12,7 +12,7 @@ const turbo_colormap_data = [[0.18995,0.07176,0.23217],[0.19483,0.08339,0.26149]
 // If you have 16-bit or 32-bit integer values, convert them to floating point values on the [0,1] range and then use interpolate(). Doing the interpolation in floating point will reduce banding.
 // If some of your values may lie outside the [0,1] range, use interpolate_or_clip() to highlight them.
 
-export function interpolate_turbo_color(x: number)
+export function interpolateTurboColor(x: number)
 {
     x = Math.max(0.0, Math.min(1.0, x))
     let a = Math.floor(x*255.0)
@@ -24,8 +24,8 @@ export function interpolate_turbo_color(x: number)
             colormap[a][2] + (colormap[b][2] - colormap[a][2]) * f]
 }
 
-export function interpolate_turbo_color_range(x: number, min: number, max: number) {
+export function interpolateTurboColorRange(x: number, min: number, max: number) {
     const range = max - min;
     x = (x - min) / range;
-    return interpolate_turbo_color(x)
+    return interpolateTurboColor(x)
 }
