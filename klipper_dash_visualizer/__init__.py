@@ -28,20 +28,47 @@ _current_path = _os.path.dirname(_os.path.abspath(__file__))
 
 _this_module = _sys.modules[__name__]
 
+_dev_js = _os.path.join(_basepath, "klipper_dash_visualizer.dev.js")
+_prod_js = _os.path.join(_basepath, "klipper_dash_visualizer.min.js")
+_is_prod = True
 
-_js_dist = [
-    {
-        'relative_package_path': 'klipper_dash_visualizer.min.js',
+if _os.path.exists(_dev_js):
+    if _os.path.exists(_prod_js):
+        dev_mod = _os.path.getmtime(_dev_js)
+        prod_mod = _os.path.getmtime(_prod_js)
+        if dev_mod > prod_mod:
+            _is_prod = False
+    else:
+        _is_prod = False
 
-        'namespace': package_name
-    },
-    {
-        'relative_package_path': 'klipper_dash_visualizer.min.js.map',
+if _is_prod:
+    _js_dist = [
+        {
+            'relative_package_path': 'klipper_dash_visualizer.min.js',
 
-        'namespace': package_name,
-        'dynamic': True
-    }
-]
+            'namespace': package_name
+        },
+        {
+            'relative_package_path': 'klipper_dash_visualizer.min.js.map',
+
+            'namespace': package_name,
+            'dynamic': True
+        }
+    ]
+else:
+    _js_dist = [
+        {
+            'relative_package_path': 'klipper_dash_visualizer.dev.js',
+
+            'namespace': package_name
+        },
+        {
+            'relative_package_path': 'klipper_dash_visualizer.dev.js.map',
+
+            'namespace': package_name,
+            'dynamic': True
+        }
+    ]
 
 _css_dist = [
     {

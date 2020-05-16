@@ -1,6 +1,7 @@
 import React, {Component} from "react";
 import KlipperDashRenderer from './klipper_dash_renderer.react';
 import {Tab, Tabs} from "./tabs.react"
+import Plot from "react-plotly.js"
 
 type Props =
 {
@@ -35,7 +36,19 @@ export default class App extends Component<Props, State> {
             <div id="main">
                 <Tabs onTabSelected={this.onTabSelected}>
                     <Tab label="Graph">
-                        {this.props.children}
+                        <Plot
+                            data={[
+                            {
+                                x: [1, 2, 3],
+                                y: [2, 6, 3],
+                                type: 'scatter',
+                                mode: 'lines+markers',
+                                marker: {color: 'red'},
+                            },
+                            {type: 'bar', x: [1, 2, 3], y: [2, 5, 3]},
+                            ]}
+                            layout={{width: 320, height: 240, title: 'A Fancy Plot'}}
+                        />
                     </Tab>
                     <Tab label="3D View">
                         <KlipperDashRenderer

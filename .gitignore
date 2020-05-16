@@ -281,6 +281,7 @@ R/
 man/
 klipper_dash_visualizer/_imports_.py
 klipper_dash_visualizer/*.min.js*
+klipper_dash_visualizer/*.dev.js*
 klipper_dash_visualizer/KlipperDashRenderer.py
 klipper_dash_visualizer/App.py
 klipper_dash_visualizer/metadata.json
