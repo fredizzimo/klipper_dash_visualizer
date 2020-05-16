@@ -1,16 +1,18 @@
 import {
-   BufferGeometry, Vector3, Line3, Uint32BufferAttribute, Float32BufferAttribute
+   BufferGeometry, Vector3, Line3, Uint32BufferAttribute, Float32BufferAttribute, Uint8BufferAttribute, Color
 } from "three";
+
+import {interpolate_turbo_color_range} from "../turbo_colormap"
 
 
 export class ExtrusionGeometry extends BufferGeometry
 {
-    constructor(points: number[] | Float32Array, width: number, height: number) {
+    constructor(points: number[] | Float32Array, velocities: number[] | Float32Array, width: number, height: number) {
         super();
-        this.createBuffer(points, width, height, false);
+        this.createBuffer(points, velocities, width, height, false);
     }
 
-    createBuffer(points: number[] | Float32Array, width: number, height: number, closed: boolean) {
+    createBuffer(points: number[] | Float32Array, velocities: number[] | Float32Array, width: number, height: number, closed: boolean) {
         if (points.length == 0) {
             return;
         }
@@ -18,14 +20,18 @@ export class ExtrusionGeometry extends BufferGeometry
         let output_vertices: number[] = [];
         let output_normals: number[] = [];
         let output_indices: number[] = [];
+        let output_colors: number[] = [];
 
-        let push_geometry = function(pos: Vector3, normal: Vector3) {
+        let push_geometry = function(pos: Vector3, normal: Vector3, color: Color) {
             output_vertices.push(pos.x);
             output_vertices.push(pos.y);
             output_vertices.push(pos.z);
             output_normals.push(normal.x);
             output_normals.push(normal.y);
             output_normals.push(normal.z);
+            output_colors.push(Math.floor(color.r*255));
+            output_colors.push(Math.floor(color.g*255));
+            output_colors.push(Math.floor(color.b*255));
         }
         
         let push_triangle = function(idx1: number, idx2: number, idx3: number) {
@@ -126,6 +132,12 @@ export class ExtrusionGeometry extends BufferGeometry
             let idx_b = [];
             let idx_last = output_vertices.length / 3;
 
+            const velocity_a = velocities[i];
+            const velocity_b = velocities[i+1];
+            const max_velocity = 100;
+            const color_a = new Color(...interpolate_turbo_color_range(velocity_a, 0, max_velocity));
+            const color_b = new Color(...interpolate_turbo_color_range(velocity_b, 0, max_velocity));
+                        
             const z_different = (z_prev != l_a.z);
             z_prev = l_b.z;
 
@@ -133,7 +145,7 @@ export class ExtrusionGeometry extends BufferGeometry
             if (ii == 0)
             {
                 idx_a[TOP] = idx_last++;
-                push_geometry(a[TOP], n_top);
+                push_geometry(a[TOP], n_top, color_a);
             }
             else
             {
@@ -144,11 +156,11 @@ export class ExtrusionGeometry extends BufferGeometry
             {
                 // Start of the 1st line segment or a change of the layer thickness while maintaining the print_z.
                 idx_a[BOTTOM] = idx_last++;
-                push_geometry(a[BOTTOM], n_bottom);
+                push_geometry(a[BOTTOM], n_bottom, color_a);
                 idx_a[LEFT] = idx_last++;
-                push_geometry(a[LEFT], n_left);
+                push_geometry(a[LEFT], n_left, color_a);
                 idx_a[RIGHT] = idx_last++;
-                push_geometry(a[RIGHT], n_right);
+                push_geometry(a[RIGHT], n_right, color_a);
             }
             else
             {
@@ -173,9 +185,9 @@ export class ExtrusionGeometry extends BufferGeometry
 
                 // Allocate new left / right points for the start of this segment as these points will receive their own normals to indicate a sharp turn.
                 idx_a[RIGHT] = idx_last++;
-                push_geometry(a[RIGHT], n_right);
+                push_geometry(a[RIGHT], n_right, color_a);
                 idx_a[LEFT] = idx_last++;
-                push_geometry(a[LEFT], n_left);
+                push_geometry(a[LEFT], n_left, color_a);
 
                 if (is_right_turn)
                 {
@@ -220,7 +232,7 @@ export class ExtrusionGeometry extends BufferGeometry
             else
             {
                 idx_b[TOP] = idx_last++;
-                push_geometry(b[TOP], n_top);
+                push_geometry(b[TOP], n_top, color_b);
             }
 
             if (closed && (ii + 1 == lines_end) && (width == width_initial))
@@ -228,14 +240,14 @@ export class ExtrusionGeometry extends BufferGeometry
             else
             {
                 idx_b[BOTTOM] = idx_last++;
-                push_geometry(b[BOTTOM], n_bottom);
+                push_geometry(b[BOTTOM], n_bottom, color_b);
             }
 
             // Generate new vertices for the end of this line segment.
             idx_b[LEFT] = idx_last++;
-            push_geometry(b[LEFT], n_left);
+            push_geometry(b[LEFT], n_left, color_b);
             idx_b[RIGHT] = idx_last++;
-            push_geometry(b[RIGHT], n_right);
+            push_geometry(b[RIGHT], n_right, color_b);
 
             for (let i=0; i<4; i++)
             {
@@ -269,7 +281,8 @@ export class ExtrusionGeometry extends BufferGeometry
         }
 
         this.setIndex(new Uint32BufferAttribute(output_indices, 1));
-        this.setAttribute( 'position', new Float32BufferAttribute( output_vertices, 3 ) );
-        this.setAttribute( 'normal', new Float32BufferAttribute( output_normals, 3 ) );
+        this.setAttribute("position", new Float32BufferAttribute( output_vertices, 3 ) );
+        this.setAttribute("normal", new Float32BufferAttribute( output_normals, 3 ) );
+        this.setAttribute("color", new Uint8BufferAttribute(output_colors, 3, true) );
     }
 }

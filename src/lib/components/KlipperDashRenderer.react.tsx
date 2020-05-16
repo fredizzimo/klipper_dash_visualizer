@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 import tinycolor from "tinycolor2"
 import { ExtrusionGeometry } from "./ExtrusionGeometry";
-import { Vector2, MeshBasicMaterial, Mesh, MeshPhongMaterial } from "three";
+import { Vector2, MeshBasicMaterial, Mesh, MeshPhongMaterial, MeshLambertMaterial, FlatShading, LineBasicMaterial, MeshNormalMaterial } from "three";
 
 type KlipperDashRendererProps =
 {
@@ -172,9 +172,10 @@ export default class KlipperDashRenderer extends Component<KlipperDashRendererPr
     }
 
     add_lines() {
-        this.extrusion_geometry = new ExtrusionGeometry(this.props.vertices, 0.4, 0.4);
+        this.extrusion_geometry = new ExtrusionGeometry(this.props.vertices, this.props.velocities, 0.4, 0.4);
         this.extrusion_material = new MeshPhongMaterial({
-            color: 0xFF0000,
+            color: 0xFFFFFF,
+            vertexColors: true,
         });
         var extrusion_mesh = new Mesh(this.extrusion_geometry, this.extrusion_material);
         this.scene.add(extrusion_mesh);
