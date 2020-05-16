@@ -14,5 +14,9 @@ App.propTypes = {
     velocities: PropTypes.arrayOf(PropTypes.number).isRequired,
     printer_dimensions: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)).isRequired,
     selected_time: PropTypes.arrayOf(PropTypes.number),
-    children: PropTypes.node
+    figure: PropTypes.exact({
+        data: PropTypes.arrayOf(PropTypes.object),
+        layout: PropTypes.object,
+        frames: PropTypes.arrayOf(PropTypes.object),
+    }),
 };

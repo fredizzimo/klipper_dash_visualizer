@@ -16,12 +16,11 @@ class DashApp(object):
         app = Dash()
         app.layout = App(
             id="app",
-            children = [
-            ],
             vertices=data.spatial_coordinates[data.culled_coordinates,:].flatten(),
             velocities=data.velocities[data.culled_coordinates].flatten(),
             printer_dimensions=printer_dimensions,
-            times=data.times[data.culled_coordinates]
+            times=data.times[data.culled_coordinates],
+            figure=main_plot(data)
         )
         if False:
             app.clientside_callback(

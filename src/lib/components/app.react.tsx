@@ -1,7 +1,7 @@
 import React, {Component} from "react";
 import KlipperDashRenderer from './klipper_dash_renderer.react';
 import {Tab, Tabs} from "./tabs.react"
-import Plot from "react-plotly.js"
+import Plot, {Figure} from "react-plotly.js"
 
 type Props =
 {
@@ -11,7 +11,7 @@ type Props =
     velocities: Float32Array;
     printer_dimensions: Array<Array<number>>;
     selected_time?: Array<number>;
-    children: Node;
+    figure: Figure
 };
 
 type State =
@@ -37,17 +37,9 @@ export default class App extends Component<Props, State> {
                 <Tabs onTabSelected={this.onTabSelected}>
                     <Tab label="Graph">
                         <Plot
-                            data={[
-                            {
-                                x: [1, 2, 3],
-                                y: [2, 6, 3],
-                                type: 'scatter',
-                                mode: 'lines+markers',
-                                marker: {color: 'red'},
-                            },
-                            {type: 'bar', x: [1, 2, 3], y: [2, 5, 3]},
-                            ]}
-                            layout={{width: 320, height: 240, title: 'A Fancy Plot'}}
+                            data={this.props.figure.data}
+                            layout={this.props.figure.layout}
+                            frames={this.props.figure.frames}
                         />
                     </Tab>
                     <Tab label="3D View">
