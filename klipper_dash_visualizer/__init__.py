@@ -6,8 +6,6 @@ import json
 
 import dash as _dash
 
-from .standalone_visualizer import StandaloneVisualizer
-
 # noinspection PyUnresolvedReferences
 from ._imports_ import *
 from ._imports_ import __all__

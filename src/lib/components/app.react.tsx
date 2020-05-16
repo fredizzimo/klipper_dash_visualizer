@@ -1,6 +1,6 @@
 import React, {Component} from "react";
-import KlipperDashRenderer from './KlipperDashRenderer.react';
-import {Tab, Tabs} from "./Tabs.react"
+import KlipperDashRenderer from './klipper_dash_renderer.react';
+import {Tab, Tabs} from "./tabs.react"
 
 type Props =
 {

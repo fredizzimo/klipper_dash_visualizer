@@ -2,7 +2,7 @@ import React, {Component} from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 import tinycolor from "tinycolor2"
-import { ExtrusionGeometry } from "./ExtrusionGeometry";
+import { ExtrusionGeometry } from "../extrusion_geometry";
 import { Vector2, MeshBasicMaterial, Mesh, MeshPhongMaterial, MeshLambertMaterial, FlatShading, LineBasicMaterial, MeshNormalMaterial } from "three";
 
 type KlipperDashRendererProps =

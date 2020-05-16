@@ -2,7 +2,7 @@ import {
    BufferGeometry, Vector3, Line3, Uint32BufferAttribute, Float32BufferAttribute, Uint8BufferAttribute, Color
 } from "three";
 
-import {interpolate_turbo_color_range} from "../turbo_colormap"
+import {interpolate_turbo_color_range} from "./turbo_colormap"
 
 
 export class ExtrusionGeometry extends BufferGeometry
