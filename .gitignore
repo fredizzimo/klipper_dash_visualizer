@@ -286,5 +286,6 @@ klipper_dash_visualizer/KlipperDashRenderer.py
 klipper_dash_visualizer/App.py
 klipper_dash_visualizer/metadata.json
 klipper_dash_visualizer/package-info.json
+klipper_dash_visualizer/assets/roboto-*
 NAMESPACE
 DESCRIPTION
