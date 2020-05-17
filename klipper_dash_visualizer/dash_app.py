@@ -22,28 +22,6 @@ class DashApp(object):
             times=data.times[data.culled_coordinates],
             figure=main_plot(data)
         )
-        if False:
-            app.clientside_callback(
-                """
-                function(relayoutData, fig) {
-                    return window.klipper_dash_visualizer.zoom_figure_y(fig);
-                }
-                """,
-                Output("steppers", "figure"),
-                [Input("steppers", "relayoutData")],
-                [State("steppers", "figure")]
-            )
-
-            app.clientside_callback(
-                """
-                function(relayoutData, fig) {
-                    return [...fig.layout.xaxis.range];
-                }
-                """,
-                Output("app", "selected_time"),
-                [Input("steppers", "relayoutData")],
-                [State("steppers", "figure")]
-            )
         self.app = app
 
 
