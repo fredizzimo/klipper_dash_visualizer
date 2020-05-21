@@ -71,11 +71,6 @@ else:
     ]
 
 _css_dist = [
-    {
-        'relative_package_path': 'klipper_dash_visualizer.css',
-
-        'namespace': package_name
-    }
 ]
 
 
