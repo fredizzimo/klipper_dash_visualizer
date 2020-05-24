@@ -94,7 +94,9 @@ const App = withStyles(styles)(
                         </Tabs>
                     </AppBar>
                     <RangeSelect
+                        selected_time={this.state.selected_time}
                         min_max_time={this.state.min_max_time}
+                        onTimeSelected={this.onTimeSelected}
                     />
                     <TabPanel
                         className={this.props.classes.tab_panel}

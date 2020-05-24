@@ -40,6 +40,13 @@ const MainPlot = withStyles(styles)(
 
         componentDidUpdate(prevProps: Props, prevState: State) {
             if (this.props.selected_time != prevProps.selected_time) {
+                let graph_time = this.props.figure.layout.xaxis.range
+                if (graph_time[0] != this.props.selected_time[0] || graph_time[1] != this.props.selected_time[1]) {
+                    this.props.figure.layout.xaxis.range = [this.props.selected_time[0], this.props.selected_time[1]];
+                    this.props.figure.layout.xaxis.autorange = false;
+                    (this.props.figure.layout as any).datarevision++;
+                    this.updateGraphRevision()
+                }
                 this.zoomFigureY()
             }
         }
