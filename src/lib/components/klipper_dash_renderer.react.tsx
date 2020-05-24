@@ -67,9 +67,6 @@ const KlipperDashRenderer = withStyles(styles)(
             if (this.props.selected_time != prevProps.selected_time) {
                 // TODO: Update selection
             }
-            if (this.props.active) {
-                this.canvas.current.focus();
-            }
         }
 
         componentDidMount() {
@@ -260,19 +257,11 @@ const KlipperDashRenderer = withStyles(styles)(
             this.post_camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
         }
 
-        tryToRefocus=()=> {
-            if (this.props.active) {
-                let element = this.canvas.current
-                setTimeout(function () { element.focus(); }, 20);
-            }
-        }
-
         render() {
             return (
                 <div
                     className={this.props.classes.renderer}
                     id={this.props.id}
-                    onBlur={this.tryToRefocus}
                 >
                 <canvas
                     className={this.props.classes.canvas}

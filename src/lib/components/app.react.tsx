@@ -2,8 +2,10 @@ import React, {Component} from "react";
 import KlipperDashRenderer from './klipper_dash_renderer.react';
 import {Figure} from "react-plotly.js"
 import MainPlot from "./main_plot"
+import {get_min_max} from "../helpers"
 import { Tab, Tabs, AppBar, Box, Theme, createStyles, WithStyles, withStyles } from "@material-ui/core";
 import { TabPanel } from "./tabs.react"
+import { RangeSelect} from "./range_select"
 
 const styles = (theme: Theme) => createStyles({
     "@global": {
@@ -41,6 +43,7 @@ type State =
 {
     activeTab: string
     selected_time: Array<number>;
+    min_max_time: Array<number>;
 };
 
 
@@ -48,9 +51,19 @@ const App = withStyles(styles)(
     class extends Component<Props, State> {
         constructor(props: Props) {
             super(props);
+            const min_max_time = get_min_max(this.props.times, 0, this.props.times.length)
             this.state = {
                 activeTab: "graphs",
-                selected_time: [null, null],
+                selected_time: min_max_time,
+                min_max_time: min_max_time,
+            }
+        }
+
+        componentDidUpdate(prevProps: Props, prevState: State) {
+            if (this.props.times != prevProps.times) {
+                this.setState({
+                    min_max_time: get_min_max(this.props.times, 0, this.props.times.length)
+                })
             }
         }
 
@@ -80,6 +93,9 @@ const App = withStyles(styles)(
                             />
                         </Tabs>
                     </AppBar>
+                    <RangeSelect
+                        min_max_time={this.state.min_max_time}
+                    />
                     <TabPanel
                         className={this.props.classes.tab_panel}
                         index={this.state.activeTab}
