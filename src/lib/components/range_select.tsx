@@ -45,12 +45,17 @@ export class RangeSelect extends Component<Props, State>
     }
 
     render() {
+        const range = this.props.selected_time[1] - this.props.selected_time[0];
+        const min = this.props.selected_time[0] - range*0.1;
+        const max = this.props.selected_time[1] + range*0.1;
+        const steps = (max - min) / 1000;
         return <Slider
             value={this.state.current_selection}
             onChange={this.onTimeSliderChange}
             onChangeCommitted={this.onTimeSliderCommitted}
-            min={this.props.selected_time[0] - 10}
-            max={this.props.selected_time[1] + 10}
+            min={min}
+            max={max}
+            step={steps}
         />
     }
 }
