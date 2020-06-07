@@ -217,8 +217,8 @@ const MainPlot = withStyles(styles)(
 
             let current_y_axis = 1
             let current_main_y_axis = 0
-            let createYAxis = function(graph_num: number, pos: number) {
-                const first = pos == 0.0;
+            let createYAxis = function(graph_num: number, pos: number, trace_nr: number) {
+                const first = trace_nr == 0
                 let axis: any = {
                     anchor: first ? "x" : "free",
                     side: "left",
@@ -246,12 +246,13 @@ const MainPlot = withStyles(styles)(
                     }
                     return false;
                 }
+                let trace_nr = 0;
                 if (has_trace("pos"))
-                    layout["yaxis" + current_y_axis++] = createYAxis(i, 0.0)
+                    layout["yaxis" + current_y_axis++] = createYAxis(i, 0.0, trace_nr++)
                 if (has_trace("vel"))
-                    layout["yaxis" + current_y_axis++] = createYAxis(i, 1.0)
+                    layout["yaxis" + current_y_axis++] = createYAxis(i, 1.0, trace_nr++)
                 if (has_trace("acc"))
-                    layout["yaxis" + current_y_axis++] = createYAxis(i, 2.0)
+                    layout["yaxis" + current_y_axis++] = createYAxis(i, 2.0, trace_nr++)
             }
             layout["template"] = theme
             return layout;

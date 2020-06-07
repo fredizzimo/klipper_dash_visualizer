@@ -96,7 +96,6 @@ def main_plot(data):
     return fig
 
 def plots(data):
-    num_plots = len(data.steppers) + 1
     plots = [
         {
             "name": stepper.name,
@@ -118,4 +117,18 @@ def plots(data):
         }
         for stepper in data.steppers
     ]
+    plots.append({
+        "name": "Global",
+        "traces": [
+            {
+                "name": "vel",
+                "data": data.velocities
+            },
+            {
+                "name": "acc",
+                "data": data.accelerations
+            },
+        ],
+        "times": data.times
+    })
     return plots
