@@ -12,7 +12,7 @@ def run_app(parser):
 
     app = DashApp(generator, printer_dimensions)
 
-    app.run(debug=True)
+    app.run(debug=False, dev_tools_hot_reload=True)
 
 def main():
     parser = argparse.ArgumentParser(description=
