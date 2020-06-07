@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from dash import Dash
 from dash.dependencies import Input, Output, State
 from .App import App
-from .plots import main_plot, plots
+from .plots import get_plot_data
 
 instructions = \
 """
@@ -20,8 +20,7 @@ class DashApp(object):
             velocities=data.velocities[data.culled_coordinates].flatten(),
             printer_dimensions=printer_dimensions,
             times=data.times[data.culled_coordinates],
-            figure=main_plot(data),
-            plots=plots(data)
+            plots=get_plot_data(data)
         )
         self.app = app
 

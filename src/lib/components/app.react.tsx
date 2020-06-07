@@ -1,6 +1,5 @@
 import React, {Component} from "react";
 import KlipperDashRenderer from './klipper_dash_renderer.react';
-import {Figure} from "react-plotly.js"
 import MainPlot, { PlotDef } from "./main_plot"
 import {get_min_max} from "../helpers"
 import { Tab, Tabs, AppBar, Box, Theme, createStyles, WithStyles, withStyles } from "@material-ui/core";
@@ -36,7 +35,6 @@ interface Props extends WithStyles<typeof styles> {
     times: Float32Array;
     velocities: Float32Array;
     printer_dimensions: Array<Array<number>>;
-    figure: Figure;
     plots: Array<PlotDef>;
 };
 
@@ -105,7 +103,6 @@ const App = withStyles(styles)(
                         value="graphs"
                     >
                         <MainPlot
-                            figure={this.props.figure}
                             selected_time={this.state.selected_time}
                             onTimeSelected={this.onTimeSelected}
                             plots={this.props.plots}

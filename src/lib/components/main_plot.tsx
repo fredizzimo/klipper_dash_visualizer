@@ -32,7 +32,6 @@ const TraceStyles = [
 ]
 
 interface Props extends WithStyles<typeof styles> {
-    figure: Figure;
     selected_time: Array<number>;
     onTimeSelected : (time: Array<number>) => void;
     plots: Array<PlotDef>;
@@ -75,16 +74,15 @@ const MainPlot = withStyles(styles)(
 
         componentDidUpdate(prevProps: Props, prevState: State) {
             if (this.props.selected_time != prevProps.selected_time) {
-            /*
-                let graph_time = this.props.figure.layout.xaxis.range
+                const layout = this.state.layout
+                let graph_time = layout.xaxis.range
                 if (graph_time[0] != this.props.selected_time[0] || graph_time[1] != this.props.selected_time[1]) {
-                    this.props.figure.layout.xaxis.range = [this.props.selected_time[0], this.props.selected_time[1]];
-                    this.props.figure.layout.xaxis.autorange = false;
-                    (this.props.figure.layout as any).datarevision++;
+                    layout.xaxis.range = [this.props.selected_time[0], this.props.selected_time[1]];
+                    layout.xaxis.autorange = false;
+                    layout.datarevision++;
                     this.updateGraphRevision()
                 }
                 this.zoomFigureY()
-            */
             }
         }
 
@@ -100,7 +98,7 @@ const MainPlot = withStyles(styles)(
         }
 
         updateSelectedTime() {
-            let selected_time = this.props.figure.layout.xaxis.range
+            let selected_time = this.state.layout.xaxis.range
             if (this.props.selected_time == null || 
                     this.props.selected_time[0] != selected_time[0] ||
                     this.props.selected_time[1] != selected_time[1])
@@ -111,22 +109,21 @@ const MainPlot = withStyles(styles)(
 
         zoomFigureY()
         {
-            /*
-            let fig = this.props.figure
-            var x_range = fig.layout.xaxis.range
-            for (let i=0;i<fig.data.length;i++) {
-                let element = fig.data[i];
+            const layout = this.state.layout
+            const data = this.state.data
+            var x_range = layout.xaxis.range
+            for (let i=0;i<data.length;i++) {
+                let element = data[i];
                 let y_range = this.zoomTraceY(element.x as ArrayLike<number>, element.y as ArrayLike<number>, x_range[0], x_range[1]);
                 let axis_name = "yaxis"
                 if (i > 0) {
                     axis_name = axis_name + (i+1);
                 }
-                (fig.layout as any)[axis_name].range = y_range;
-                (fig.layout as any)[axis_name].autorange = false;
+                layout[axis_name].range = y_range;
+                layout[axis_name].autorange = false;
             }
-            (fig.layout as any).datarevision++;
+            layout.datarevision++;
             this.updateGraphRevision()
-            */
         }
 
         zoomTraceY(xvals: ArrayLike<number>, yvals: ArrayLike<number>, start: number, end: number)
@@ -264,7 +261,7 @@ const MainPlot = withStyles(styles)(
                     className={this.props.classes.graph}
                     data={this.state.data}
                     layout={this.state.layout}
-                    frames={this.props.figure.frames}
+                    frames={null}
                     revision={this.state.graph_revision}
                     onRelayout={this.onPlotRelayout}
                     onUpdate={this.onPlotUpdate}
