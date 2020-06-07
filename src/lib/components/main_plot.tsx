@@ -12,6 +12,25 @@ const styles = (theme: Theme) => createStyles({
     }
 });
 
+const TraceColors = [
+    "rgb(31, 119, 180)",
+    "rgb(255, 127, 14)",
+    "rgb(44, 160, 44)",
+    "rgb(214, 39, 40)",
+    "rgb(148, 103, 189)",
+    "rgb(140, 86, 75)",
+    "rgb(227, 119, 194)",
+    "rgb(127, 127, 127)",
+    "rgb(188, 189, 34)",
+    "rgb(23, 190, 207)",
+]
+
+const TraceStyles = [
+    "solid",
+    "dash",
+    "dot"
+]
+
 interface Props extends WithStyles<typeof styles> {
     figure: Figure;
     selected_time: Array<number>;
@@ -22,17 +41,18 @@ interface Props extends WithStyles<typeof styles> {
 type State = {
     graph_revision: number;
     layout: any;
+    data: any;
 };
 
 type Trace = {
     name: string,
-    x: Array<number>
-    y: Array<number>
+    data: Array<number>
 }
 
 export type PlotDef = {
     name: string;
     traces: Array<Trace>;
+    times: Array<number>;
 }
 
 const MainPlot = withStyles(styles)(
@@ -43,7 +63,8 @@ const MainPlot = withStyles(styles)(
             super(props);
             this.state = {
                 graph_revision: 1,
-                layout: this.createLayout()
+                layout: this.createLayout(),
+                data: this.createTraces()
             }
             this.relayout_called = false;
         }
@@ -140,6 +161,31 @@ const MainPlot = withStyles(styles)(
             })); 
         }
 
+        createTraces() {
+            let data: any[] = []
+            let current_axis = 1;
+            
+            const num_plots = this.props.plots.length
+            for (let plot_nr=0;plot_nr<num_plots;++plot_nr) {
+                const plot = this.props.plots[plot_nr]
+                for (let trace_nr=0;trace_nr<plot.traces.length;++trace_nr) {
+                    const trace = plot.traces[trace_nr]
+                    data.push({
+                        name: plot.name + " " + trace.name,
+                        type: "scatter",
+                        y: trace.data,
+                        x: plot.times,
+                        yaxis: "y" + current_axis++,
+                        line: {
+                            color: TraceColors[plot_nr],
+                            dash: TraceStyles[trace_nr]
+                        }
+                    })
+                }
+            }
+            return data;
+        }
+
         createLayout() {
             const graph_height = 300
             const num_plots = this.props.plots.length
@@ -215,7 +261,7 @@ const MainPlot = withStyles(styles)(
             return ( 
                 <Plot
                     className={this.props.classes.graph}
-                    data={this.props.figure.data}
+                    data={this.state.data}
                     layout={this.state.layout}
                     frames={this.props.figure.frames}
                     revision={this.state.graph_revision}

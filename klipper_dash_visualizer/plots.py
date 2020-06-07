@@ -102,15 +102,19 @@ def plots(data):
             "name": stepper.name,
             "traces": [
                 {
-                    "name": "pos"
+                    "name": "pos",
+                    "data": stepper.position
                 },
                 {
-                    "name": "vel"
+                    "name": "vel",
+                    "data": stepper.velocity
                 },
                 {
-                    "name": "acc"
+                    "name": "acc",
+                    "data": stepper.acceleration
                 },
-            ]
+            ],
+            "times": stepper.time
         }
         for stepper in data.steppers
     ]
