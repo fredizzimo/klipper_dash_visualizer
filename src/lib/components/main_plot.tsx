@@ -3,6 +3,8 @@ import Plot, {Figure} from "react-plotly.js"
 import {PlotRelayoutEvent} from "plotly.js";
 import {range_start, range_end, get_min_max} from "../helpers"
 import { Theme, createStyles, WithStyles, withStyles } from "@material-ui/core";
+// The theme is the default plotly theme copied from the python package
+import theme from "./plot_theme.json"
 
 const styles = (theme: Theme) => createStyles({
     graph: {
@@ -14,12 +16,24 @@ interface Props extends WithStyles<typeof styles> {
     figure: Figure;
     selected_time: Array<number>;
     onTimeSelected : (time: Array<number>) => void;
+    plots: Array<PlotDef>;
 };
 
-type State =
-{
-    graph_revision: number
+type State = {
+    graph_revision: number;
+    layout: any;
 };
+
+type Trace = {
+    name: string,
+    x: Array<number>
+    y: Array<number>
+}
+
+export type PlotDef = {
+    name: string;
+    traces: Array<Trace>;
+}
 
 const MainPlot = withStyles(styles)(
     class extends Component<Props, State> {
@@ -28,10 +42,10 @@ const MainPlot = withStyles(styles)(
         constructor(props: Props) {
             super(props);
             this.state = {
-                graph_revision: 1
+                graph_revision: 1,
+                layout: this.createLayout()
             }
             this.relayout_called = false;
-            (this.props.figure.layout as any).datarevision = 1;
         }
 
         onPlotRelayout=(event: PlotRelayoutEvent)=> {
@@ -40,6 +54,7 @@ const MainPlot = withStyles(styles)(
 
         componentDidUpdate(prevProps: Props, prevState: State) {
             if (this.props.selected_time != prevProps.selected_time) {
+            /*
                 let graph_time = this.props.figure.layout.xaxis.range
                 if (graph_time[0] != this.props.selected_time[0] || graph_time[1] != this.props.selected_time[1]) {
                     this.props.figure.layout.xaxis.range = [this.props.selected_time[0], this.props.selected_time[1]];
@@ -48,6 +63,7 @@ const MainPlot = withStyles(styles)(
                     this.updateGraphRevision()
                 }
                 this.zoomFigureY()
+            */
             }
         }
 
@@ -74,6 +90,7 @@ const MainPlot = withStyles(styles)(
 
         zoomFigureY()
         {
+            /*
             let fig = this.props.figure
             var x_range = fig.layout.xaxis.range
             for (let i=0;i<fig.data.length;i++) {
@@ -88,6 +105,7 @@ const MainPlot = withStyles(styles)(
             }
             (fig.layout as any).datarevision++;
             this.updateGraphRevision()
+            */
         }
 
         zoomTraceY(xvals: ArrayLike<number>, yvals: ArrayLike<number>, start: number, end: number)
@@ -122,12 +140,83 @@ const MainPlot = withStyles(styles)(
             })); 
         }
 
+        createLayout() {
+            const graph_height = 300
+            const num_plots = this.props.plots.length
+            const total_height = graph_height * num_plots
+            const spacing_pixels = 20.0
+            const spacing = spacing_pixels / total_height
+            const y_axis_spacing = 0.03
+            let layout: any = {
+                datarevision: 1,
+                xaxis: {
+                    fixedrange: false,
+                    domain: [y_axis_spacing*3.0, 1]
+                },
+                height: total_height,
+                margin: {
+                    l: 0,
+                    r: 0,
+                    t: 30,
+                    b: 30
+                }
+            }
+            
+            let domains: number[] = []
+            let spacing_step = (1.0 + spacing) / num_plots;
+            for (let i=0;i<num_plots+1;i++)
+            {
+                domains[i] = spacing_step*(num_plots-i);
+            }
+
+            let current_y_axis = 1
+            let current_main_y_axis = 0
+            let createYAxis = function(graph_num: number, pos: number) {
+                const first = pos == 0.0;
+                let axis: any = {
+                    anchor: first ? "x" : "free",
+                    side: "left",
+                    position: y_axis_spacing*pos,
+                    fixedrange: true,
+                }
+                if (!first) {
+                    axis["overlaying"] = "y" + current_main_y_axis
+                }
+                else {
+                    axis["domain"] = [domains[graph_num+1], domains[graph_num]-spacing]
+                    axis["showline"] = true
+                }
+                return axis
+            }
+
+            for(let i=0;i<num_plots;i++) {
+                current_main_y_axis = current_y_axis
+                const plot = this.props.plots[i]
+                const has_trace = function(name: string) {
+                    for (let j=0;j<plot.traces.length;j++) {
+                        if (plot.traces[j].name == name) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                if (has_trace("pos"))
+                    layout["yaxis" + current_y_axis++] = createYAxis(i, 0.0)
+                if (has_trace("vel"))
+                    layout["yaxis" + current_y_axis++] = createYAxis(i, 1.0)
+                if (has_trace("acc"))
+                    layout["yaxis" + current_y_axis++] = createYAxis(i, 2.0)
+            }
+            layout["template"] = theme
+            return layout;
+        }
+
         render() {
             return ( 
                 <Plot
                     className={this.props.classes.graph}
                     data={this.props.figure.data}
-                    layout={this.props.figure.layout}
+                    layout={this.state.layout}
                     frames={this.props.figure.frames}
                     revision={this.state.graph_revision}
                     onRelayout={this.onPlotRelayout}

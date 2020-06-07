@@ -19,4 +19,5 @@ App.propTypes = {
         layout: PropTypes.object,
         frames: PropTypes.arrayOf(PropTypes.object),
     }),
+    plots: PropTypes.arrayOf(PropTypes.object).isRequired
 };

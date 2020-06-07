@@ -6,7 +6,8 @@ def main_plot(data):
     fig = go.Figure()
     layout = {}
     graph_height = 300
-    num_plots = len(data.steppers) + 1
+    #num_plots = len(data.steppers) + 1
+    num_plots = len(data.steppers)
     total_height = graph_height * num_plots
     spacing_pixels = 20.0
 
@@ -76,11 +77,12 @@ def main_plot(data):
             (stepper.acceleration, "%s acc" % stepper.name)
         )
 
-    add_subgraph(num_plots-1, data.times,
-        None,
-        (data.velocities, "Velocity"),
-        (data.accelerations, "Acceleration")
-    )
+    if False:
+        add_subgraph(num_plots-1, data.times,
+            None,
+            (data.velocities, "Velocity"),
+            (data.accelerations, "Acceleration")
+        )
 
     layout["xaxis"] = go.layout.XAxis(
         fixedrange=False,
@@ -92,3 +94,24 @@ def main_plot(data):
 
     fig.update_layout(layout)
     return fig
+
+def plots(data):
+    num_plots = len(data.steppers) + 1
+    plots = [
+        {
+            "name": stepper.name,
+            "traces": [
+                {
+                    "name": "pos"
+                },
+                {
+                    "name": "vel"
+                },
+                {
+                    "name": "acc"
+                },
+            ]
+        }
+        for stepper in data.steppers
+    ]
+    return plots

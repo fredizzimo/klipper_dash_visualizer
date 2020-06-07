@@ -1,7 +1,7 @@
 import React, {Component} from "react";
 import KlipperDashRenderer from './klipper_dash_renderer.react';
 import {Figure} from "react-plotly.js"
-import MainPlot from "./main_plot"
+import MainPlot, { PlotDef } from "./main_plot"
 import {get_min_max} from "../helpers"
 import { Tab, Tabs, AppBar, Box, Theme, createStyles, WithStyles, withStyles } from "@material-ui/core";
 import { TabPanel } from "./tabs.react"
@@ -37,6 +37,7 @@ interface Props extends WithStyles<typeof styles> {
     velocities: Float32Array;
     printer_dimensions: Array<Array<number>>;
     figure: Figure;
+    plots: Array<PlotDef>;
 };
 
 type State =
@@ -107,6 +108,7 @@ const App = withStyles(styles)(
                             figure={this.props.figure}
                             selected_time={this.state.selected_time}
                             onTimeSelected={this.onTimeSelected}
+                            plots={this.props.plots}
                         />
                     </TabPanel>
                     <TabPanel
