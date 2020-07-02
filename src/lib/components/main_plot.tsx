@@ -1,4 +1,4 @@
-import React, {Component} from "react";
+import React, {Component, DOMElement} from "react";
 import Plot, {Figure} from "react-plotly.js"
 import {PlotRelayoutEvent} from "plotly.js";
 import {range_start, range_end, get_min_max} from "../helpers"
@@ -6,9 +6,20 @@ import { Theme, createStyles, WithStyles, withStyles } from "@material-ui/core";
 // The theme is the default plotly theme copied from the python package
 import theme from "./plot_theme.json"
 
+const yaxis_width = 200;
+const legend_width = 200;
+const min_width = 1000;
+
 const styles = (theme: Theme) => createStyles({
     graph: {
         width: "100%"
+    },
+    container: {
+        border: 0,
+        padding: 0,
+        margin: 0,
+        width: "100%",
+        minWidth: min_width
     }
 });
 
@@ -30,6 +41,12 @@ const TraceStyles = [
     "dash",
     "dot"
 ]
+
+const AxisPos : any = {
+    pos: 0.0,
+    vel: 1.0,
+    acc: 2.0
+}
 
 interface Props extends WithStyles<typeof styles> {
     selected_time: Array<number>;
@@ -56,10 +73,12 @@ export type PlotDef = {
 
 const MainPlot = withStyles(styles)(
     class extends Component<Props, State> {
-        relayout_called: boolean
+        private relayout_called: boolean
+        private container_ref: React.RefObject<HTMLDivElement>
 
         constructor(props: Props) {
             super(props);
+            this.container_ref = React.createRef<HTMLDivElement>();
             this.state = {
                 graph_revision: 1,
                 layout: this.createLayout(),
@@ -68,8 +87,13 @@ const MainPlot = withStyles(styles)(
             this.relayout_called = false;
         }
 
-        onPlotRelayout=(event: PlotRelayoutEvent)=> {
-            this.relayout_called = true;
+        componentDidMount() {
+            window.addEventListener('resize', this.onResize);
+            this.onResize();
+        }
+
+        componentWillUnmount() {
+            window.removeEventListener('resize', this.onResize);
         }
 
         componentDidUpdate(prevProps: Props, prevState: State) {
@@ -84,6 +108,10 @@ const MainPlot = withStyles(styles)(
                 }
                 this.zoomFigureY()
             }
+        }
+
+        onPlotRelayout=(event: PlotRelayoutEvent)=> {
+            this.relayout_called = true;
         }
 
         onPlotUpdate=(figure: Figure)=> {
@@ -189,12 +217,13 @@ const MainPlot = withStyles(styles)(
             const total_height = graph_height * num_plots
             const spacing_pixels = 20.0
             const spacing = spacing_pixels / total_height
-            const y_axis_spacing = 0.03
+            const domain = this.getDomain();
+            const y_axis_spacing = domain[0] / 3.0;
             let layout: any = {
                 datarevision: 1,
                 xaxis: {
                     fixedrange: false,
-                    domain: [y_axis_spacing*3.0, 1]
+                    domain: domain
                 },
                 height: total_height,
                 margin: {
@@ -202,6 +231,10 @@ const MainPlot = withStyles(styles)(
                     r: 0,
                     t: 30,
                     b: 30
+                },
+                legend: {
+                    xanchor: "left",
+                    x: domain[1]
                 }
             }
             
@@ -223,7 +256,7 @@ const MainPlot = withStyles(styles)(
                     fixedrange: true,
                 }
                 if (!first) {
-                    axis["overlaying"] = "y" + current_main_y_axis
+                    axis["overlaying"] = "y" + (current_main_y_axis == 1 ? "" : current_main_y_axis)
                 }
                 else {
                     axis["domain"] = [domains[graph_num+1], domains[graph_num]-spacing]
@@ -244,30 +277,67 @@ const MainPlot = withStyles(styles)(
                     return false;
                 }
                 let trace_nr = 0;
+                const axisName = function(num: number) {
+                    return "yaxis" + (num == 1 ? "" : num)
+                }
                 if (has_trace("pos"))
-                    layout["yaxis" + current_y_axis++] = createYAxis(i, 0.0, trace_nr++)
+                    layout[axisName(current_y_axis++)] = createYAxis(i, AxisPos["pos"], trace_nr++)
                 if (has_trace("vel"))
-                    layout["yaxis" + current_y_axis++] = createYAxis(i, 1.0, trace_nr++)
+                    layout[axisName(current_y_axis++)] = createYAxis(i, AxisPos["vel"], trace_nr++)
                 if (has_trace("acc"))
-                    layout["yaxis" + current_y_axis++] = createYAxis(i, 2.0, trace_nr++)
+                    layout[axisName(current_y_axis++)] = createYAxis(i, AxisPos["acc"], trace_nr++)
             }
             layout["template"] = theme
             return layout;
         }
 
+        getDomain() {
+            const element = this.container_ref.current;
+            const width = Math.max(element ? element.clientWidth : min_width, min_width);
+            return [yaxis_width / width, 1.0 - legend_width / width]
+        }
+
+        onResize=()=>{
+            const domain = this.getDomain()
+            const layout = this.state.layout
+            layout.xaxis.domain = domain
+            layout.legend.x = domain[1]
+            const plots = this.props.plots; 
+            var current_axis = 1
+            const y_axis_spacing = domain[0] / 3.0;
+            for (let i=0;i<plots.length;i++) {
+                const plot = plots[i];
+                for (let j=0;j<plot.traces.length;j++) {
+                    const trace = plot.traces[j]
+                    let multiplier = AxisPos[trace.name]
+                    const yaxis = "yaxis" + (current_axis == 1 ? "" : current_axis)
+                    layout[yaxis].position = multiplier * y_axis_spacing
+                    current_axis++;
+                }
+            }
+
+            layout.datarevision++;
+            this.updateGraphRevision();
+        }
+
         render() {
             return ( 
-                <Plot
-                    className={this.props.classes.graph}
-                    data={this.state.data}
-                    layout={this.state.layout}
-                    frames={null}
-                    revision={this.state.graph_revision}
-                    onRelayout={this.onPlotRelayout}
-                    onUpdate={this.onPlotUpdate}
-                    onInitialized={this.onPlotInitialized}
-                    useResizeHandler={true}
-                />
+                <div 
+                    className={this.props.classes.container}
+                    ref={this.container_ref}
+                >
+                    <Plot
+                        className={this.props.classes.graph}
+                        data={this.state.data}
+                        layout={this.state.layout}
+                        frames={null}
+                        revision={this.state.graph_revision}
+                        onRelayout={this.onPlotRelayout}
+                        onUpdate={this.onPlotUpdate}
+                        onInitialized={this.onPlotInitialized}
+                        useResizeHandler={true}
+                    />
+                </div>
             )
         }
     }
