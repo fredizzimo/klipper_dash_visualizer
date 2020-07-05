@@ -1,5 +1,9 @@
 import React, {Component} from "react";
 import {RelativeSlider} from "./relative_slider"
+import { Grid, Box } from "@material-ui/core";
+
+const margin = 2
+const spacing = 2
 
 type State = {
 }
@@ -16,6 +20,14 @@ export class RangeSelect extends Component<Props, State>
         super(props)
     }
 
+    onMinTimeChanged=(time: number)=> {
+        this.props.onTimeSelected([time, this.props.selected_time[1]])
+    }
+
+    onMaxTimeChanged=(time: number)=> {
+        this.props.onTimeSelected([this.props.selected_time[0], time])
+    }
+
     onCurrentTimeChanged=(time: number)=> {
         const span = this.props.selected_time[1] - this.props.selected_time[0]
         const half_span = span*0.5
@@ -26,11 +38,38 @@ export class RangeSelect extends Component<Props, State>
 
     render() {
         const current_time = 0.5 * (this.props.selected_time[0] + this.props.selected_time[1])
-        return <RelativeSlider
-            min={this.props.min_max_time[0]}
-            max={this.props.min_max_time[1]}
-            value={current_time}
-            onChange={this.onCurrentTimeChanged}
-       />
+        return (
+            <Box m={margin}>
+                <Grid
+                    container
+                    spacing={spacing}
+                >
+                    <Grid item xs={4}>
+                        <RelativeSlider
+                            min={this.props.min_max_time[0]-20}
+                            max={this.props.selected_time[1]}
+                            value={this.props.selected_time[0]}
+                            onChange={this.onMinTimeChanged}
+                        />
+                    </Grid>
+                    <Grid item xs={4}>
+                        <RelativeSlider
+                            min={this.props.min_max_time[0]}
+                            max={this.props.min_max_time[1]}
+                            value={current_time}
+                            onChange={this.onCurrentTimeChanged}
+                        />
+                    </Grid>
+                    <Grid item xs={4}>
+                        <RelativeSlider
+                            min={this.props.selected_time[0]}
+                            max={this.props.min_max_time[1]+20}
+                            value={this.props.selected_time[1]}
+                            onChange={this.onMaxTimeChanged}
+                        />
+                    </Grid>
+                </Grid>
+            </Box>
+        )
     }
 }
