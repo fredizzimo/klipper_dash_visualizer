@@ -1,8 +1,7 @@
 import React, {Component} from "react";
-import { Slider } from "@material-ui/core";
+import {RelativeSlider} from "./relative_slider"
 
 type State = {
-    current_selection: Array<number>;
 }
 
 type Props = {
@@ -15,47 +14,23 @@ export class RangeSelect extends Component<Props, State>
 {
     constructor(props: Props) {
         super(props)
-        this.state = {
-            current_selection: this.get_new_selection()
-        }
     }
 
-    get_new_selection() {
-        const t = this.props.selected_time;
-        return [t[0], (t[0] + t[1]) / 2, t[1]];
-    }
-
-    componentDidUpdate(prevProps: Props, prevState: State) {
-        if (this.props.selected_time != prevProps.selected_time) {
-            this.setState({
-                current_selection: this.get_new_selection()
-            })
-        }
-    }
-
-    onTimeSliderChange = (event: any, new_value: number[]) => {
-        console.log("new time " + new_value)
-        this.setState({current_selection: new_value})
-    };
-
-    onTimeSliderCommitted = (event: any, new_value: number[]) => {
-        let selected_time = [new_value[0], new_value[2]]
-        console.log("time committed" + selected_time)
-        this.props.onTimeSelected(selected_time)
+    onCurrentTimeChanged=(time: number)=> {
+        const span = this.props.selected_time[1] - this.props.selected_time[0]
+        const half_span = span*0.5
+        const start = time - half_span
+        const end = time + half_span
+        this.props.onTimeSelected([start, end])
     }
 
     render() {
-        const range = this.props.selected_time[1] - this.props.selected_time[0];
-        const min = this.props.selected_time[0] - range*0.1;
-        const max = this.props.selected_time[1] + range*0.1;
-        const steps = (max - min) / 1000;
-        return <Slider
-            value={this.state.current_selection}
-            onChange={this.onTimeSliderChange}
-            onChangeCommitted={this.onTimeSliderCommitted}
-            min={min}
-            max={max}
-            step={steps}
-        />
+        const current_time = 0.5 * (this.props.selected_time[0] + this.props.selected_time[1])
+        return <RelativeSlider
+            min={this.props.min_max_time[0]}
+            max={this.props.min_max_time[1]}
+            value={current_time}
+            onChange={this.onCurrentTimeChanged}
+       />
     }
 }

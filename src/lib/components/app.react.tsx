@@ -4,7 +4,7 @@ import MainPlot, { PlotDef } from "./main_plot"
 import {get_min_max} from "../helpers"
 import { Tab, Tabs, AppBar, Box, Theme, createStyles, WithStyles, withStyles, ThemeProvider, createMuiTheme } from "@material-ui/core";
 import { TabPanel } from "./tabs.react"
-import { RelativeSlider} from "./relative_slider"
+import { RangeSelect } from "./range_select"
 
 const styles = (theme: Theme) => createStyles({
     "@global": {
@@ -76,16 +76,7 @@ const App = withStyles(styles)(
             this.setState({selected_time: time})
         }
 
-        onCurrentTimeChanged=(time: number)=> {
-            const span = this.state.selected_time[1] - this.state.selected_time[0]
-            const half_span = span*0.5
-            const start = time - half_span
-            const end = time + half_span
-            this.setState({selected_time: [start, end]})
-        }
-
         render() {
-            const current_time = 0.5 * (this.state.selected_time[0] + this.state.selected_time[1])
             return (
                 <ThemeProvider
                     theme={theme}
@@ -106,11 +97,10 @@ const App = withStyles(styles)(
                                 />
                             </Tabs>
                         </AppBar>
-                        <RelativeSlider
-                           min={this.state.min_max_time[0]} 
-                           max={this.state.min_max_time[1]}
-                           value={current_time}
-                           onChange={this.onCurrentTimeChanged}
+                        <RangeSelect
+                            selected_time={this.state.selected_time}
+                            min_max_time={this.state.min_max_time}
+                            onTimeSelected={this.onTimeSelected}
                         />
                         <TabPanel
                             className={this.props.classes.tab_panel}
