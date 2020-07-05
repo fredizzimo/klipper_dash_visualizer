@@ -2,9 +2,9 @@ import React, {Component} from "react";
 import KlipperDashRenderer from './klipper_dash_renderer.react';
 import MainPlot, { PlotDef } from "./main_plot"
 import {get_min_max} from "../helpers"
-import { Tab, Tabs, AppBar, Box, Theme, createStyles, WithStyles, withStyles } from "@material-ui/core";
+import { Tab, Tabs, AppBar, Box, Theme, createStyles, WithStyles, withStyles, ThemeProvider, createMuiTheme } from "@material-ui/core";
 import { TabPanel } from "./tabs.react"
-import { RangeSelect} from "./range_select"
+import { RelativeSlider} from "./relative_slider"
 
 const styles = (theme: Theme) => createStyles({
     "@global": {
@@ -28,6 +28,8 @@ const styles = (theme: Theme) => createStyles({
         }
     },
 });
+
+const theme = createMuiTheme()
 
 interface Props extends WithStyles<typeof styles> {
     id?: string;
@@ -74,56 +76,70 @@ const App = withStyles(styles)(
             this.setState({selected_time: time})
         }
 
+        onCurrentTimeChanged=(time: number)=> {
+            const span = this.state.selected_time[1] - this.state.selected_time[0]
+            const half_span = span*0.5
+            const start = time - half_span
+            const end = time + half_span
+            this.setState({selected_time: [start, end]})
+        }
+
         render() {
+            const current_time = 0.5 * (this.state.selected_time[0] + this.state.selected_time[1])
             return (
-                <Box className={this.props.classes.root}>
-                    <AppBar position="static">
-                        <Tabs
-                            value={this.state.activeTab}
-                            onChange={this.onTabSelected}
+                <ThemeProvider
+                    theme={theme}
+                >
+                    <Box className={this.props.classes.root}>
+                        <AppBar position="static">
+                            <Tabs
+                                value={this.state.activeTab}
+                                onChange={this.onTabSelected}
+                            >
+                                <Tab 
+                                    label="Graph"
+                                    value="graphs"
+                                />
+                                <Tab
+                                    label="3D View"
+                                    value="renderer"
+                                />
+                            </Tabs>
+                        </AppBar>
+                        <RelativeSlider
+                           min={this.state.min_max_time[0]} 
+                           max={this.state.min_max_time[1]}
+                           value={current_time}
+                           onChange={this.onCurrentTimeChanged}
+                        />
+                        <TabPanel
+                            className={this.props.classes.tab_panel}
+                            index={this.state.activeTab}
+                            value="graphs"
                         >
-                            <Tab 
-                                label="Graph"
-                                value="graphs"
+                            <MainPlot
+                                selected_time={this.state.selected_time}
+                                onTimeSelected={this.onTimeSelected}
+                                plots={this.props.plots}
                             />
-                            <Tab
-                                label="3D View"
-                                value="renderer"
+                        </TabPanel>
+                        <TabPanel
+                            className={this.props.classes.tab_panel}
+                            index={this.state.activeTab}
+                            value="renderer"
+                        >
+                            <KlipperDashRenderer
+                                id="renderer"
+                                vertices={this.props.vertices}
+                                times={this.props.times}
+                                velocities={this.props.velocities}
+                                printer_dimensions={this.props.printer_dimensions}
+                                selected_time={this.state.selected_time}
+                                active={this.state.activeTab=="3D View"}
                             />
-                        </Tabs>
-                    </AppBar>
-                    <RangeSelect
-                        selected_time={this.state.selected_time}
-                        min_max_time={this.state.min_max_time}
-                        onTimeSelected={this.onTimeSelected}
-                    />
-                    <TabPanel
-                        className={this.props.classes.tab_panel}
-                        index={this.state.activeTab}
-                        value="graphs"
-                    >
-                        <MainPlot
-                            selected_time={this.state.selected_time}
-                            onTimeSelected={this.onTimeSelected}
-                            plots={this.props.plots}
-                        />
-                    </TabPanel>
-                    <TabPanel
-                        className={this.props.classes.tab_panel}
-                        index={this.state.activeTab}
-                        value="renderer"
-                    >
-                        <KlipperDashRenderer
-                            id="renderer"
-                            vertices={this.props.vertices}
-                            times={this.props.times}
-                            velocities={this.props.velocities}
-                            printer_dimensions={this.props.printer_dimensions}
-                            selected_time={this.state.selected_time}
-                            active={this.state.activeTab=="3D View"}
-                        />
-                    </TabPanel>
-                </Box>
+                        </TabPanel>
+                    </Box>
+                </ThemeProvider>
             )
         }
     }
