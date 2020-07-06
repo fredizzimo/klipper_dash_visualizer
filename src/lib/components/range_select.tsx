@@ -1,6 +1,7 @@
 import React, {Component} from "react";
 import {RelativeSlider} from "./relative_slider"
 import { Grid, Box } from "@material-ui/core";
+import { TimeSlider } from "./time_slider";
 
 const margin = 2
 const spacing = 2
@@ -45,8 +46,8 @@ export class RangeSelect extends Component<Props, State>
                     spacing={spacing}
                 >
                     <Grid item xs={4}>
-                        <RelativeSlider
-                            min={this.props.min_max_time[0]-20}
+                        <TimeSlider
+                            min={this.props.min_max_time[0]}
                             max={this.props.selected_time[1]}
                             value={this.props.selected_time[0]}
                             onChange={this.onMinTimeChanged}
