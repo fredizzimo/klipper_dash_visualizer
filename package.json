@@ -15,10 +15,17 @@
     "build-dev": "npm run build:js-dev && npm run build:py_and_r",
     "build:activated": "npm run build:js && npm run build:py_and_r-activated",
     "build-dev:activated": "npm run build:js-dev && npm run build:py_and_r-activated",
+    "test": "jest",
     "clean": "git clean -xdf build dist inst klipper_dash_visualizer klipper_dash_visualizer.egg-info man R NAMESPACE DESCRIPTION"
   },
   "author": "Fred Sundvik <fsundvik@gmail.com>",
   "license": "MIT",
+  "jest": {
+    "rootDir": "src",
+    "modulePaths": [
+      "<rootDir>/lib"
+    ]
+  },
   "dependencies": {
     "ramda": "^0.26.1"
   },
@@ -38,6 +45,7 @@
     "@types/react-plotly.js": "^2.2.4",
     "@types/tinycolor2": "^1.4.2",
     "babel-eslint": "^10.0.2",
+    "babel-jest": "^26.1.0",
     "babel-loader": "^8.0.6",
     "copyfiles": "^2.1.1",
     "css-loader": "^3.0.0",
@@ -46,6 +54,7 @@
     "eslint-plugin-import": "^2.18.0",
     "eslint-plugin-react": "^7.14.2",
     "file-loader": "^6.0.0",
+    "jest": "^26.1.0",
     "npm": "^6.1.0",
     "plotly.js": "^1.54.1",
     "prop-types": "15.7.2",
@@ -65,7 +74,7 @@
     "webpack-serve": "3.1.0"
   },
   "engines": {
-    "node": ">=8.11.0",
+    "node": ">=14.5.0",
     "npm": ">=6.1.0"
   }
 }
