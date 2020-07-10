@@ -173,4 +173,68 @@ describe("<TimeSlider/>", () => {
             expect(thumb.prop("aria-valuemax")).toBeFloat(max)
         })
     })
+
+    describe("when initialized with a value very close to min", ()=> {
+        const min=-5.001
+        const max = 10
+        const value = -5.0 
+
+        beforeEach(() => {
+            ({slider, thumb} = createSlider(min, max, value))
+        })
+
+        it("sets the internal value to zero", ()=> {
+            expect(slider.prop("value")).toBeFloat(0)
+        })
+        it("has an internal range with the correct size", ()=> {
+            expect(slider.prop("max") - slider.prop("min") + 1).toBeFloat(total_steps)
+        })
+        it("sets a one step min range", ()=> {
+            expect(slider.prop("min")).toBeFloat(-1)
+        })
+        it("sets the internal max to positive value", ()=> {
+            expect(slider.prop("max")).toBeGreaterThan(0)
+        })
+        it("sets the value correctly", ()=> {
+            expect(thumb.prop("aria-valuenow")).toBeFloat(value)
+        })
+        it("sets the minimum value correctly", ()=> {
+            expect(thumb.prop("aria-valuemin")).toBeFloat(min)
+        })
+        it("sets the maximum value correctly", ()=> {
+            expect(thumb.prop("aria-valuemax")).toBeFloat(max)
+        })
+    })
+
+    describe("when initialized with a value very close to max", ()=> {
+        const min=-5
+        const max = 10.001
+        const value = 10.0
+
+        beforeEach(() => {
+            ({slider, thumb} = createSlider(min, max, value))
+        })
+
+        it("sets the internal value to zero", ()=> {
+            expect(slider.prop("value")).toBeFloat(0)
+        })
+        it("has an internal range with the correct size", ()=> {
+            expect(slider.prop("max") - slider.prop("min") + 1).toBeFloat(total_steps)
+        })
+        it("sets the internal min to a negative value", ()=> {
+            expect(slider.prop("min")).toBeLessThan(0)
+        })
+        it("sets a one step max range", ()=> {
+            expect(slider.prop("max")).toBeFloat(1)
+        })
+        it("sets the value correctly", ()=> {
+            expect(thumb.prop("aria-valuenow")).toBeFloat(value)
+        })
+        it("sets the minimum value correctly", ()=> {
+            expect(thumb.prop("aria-valuemin")).toBeFloat(min)
+        })
+        it("sets the maximum value correctly", ()=> {
+            expect(thumb.prop("aria-valuemax")).toBeFloat(max)
+        })
+    })
 })
