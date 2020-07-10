@@ -34,16 +34,19 @@ export const TimeSlider: FunctionComponent<Props> = (props) => {
         }
     }, [changing, props.min, props.max, props.value])
 
-    const total_steps = 500;
+    const total_steps = 501;
 
     const range_min = original_value - original_min
     const range_max = original_max - original_value
     const ratio = range_min / (range_min + range_max)
-    const range_min_steps = Math.round(total_steps * ratio)
-    const range_max_steps = total_steps - range_min_steps
+    // Note zero is included in the max range
+    const range_min_steps = Math.round((total_steps-1) * ratio)
+    const range_max_steps = total_steps - 1 - range_min_steps
 
     const getActualValue = function(step: number) {
-        if (step < 0) {
+        if (step==0) {
+            return original_value
+        } else if (step < 0) {
             return original_value + step * (range_min/range_min_steps)
         } else {
             return original_value + step * (range_max/range_max_steps)
