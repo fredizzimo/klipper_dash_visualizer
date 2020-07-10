@@ -32,7 +32,8 @@
       }
     },
     "setupFilesAfterEnv": [
-      "jest-enzyme"
+      "jest-enzyme",
+      "<rootDir>/lib/jest_setup.ts"
     ],
     "testEnvironment": "enzyme",
     "testEnvironmentOptions": {
