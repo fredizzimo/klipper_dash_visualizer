@@ -1,9 +1,7 @@
-import React, {FunctionComponent, ComponentProps, ComponentState} from "react"
+import React, {FunctionComponent, useState} from "react"
 import {TimeSlider} from "./time_slider"
 import { ThemeProvider, createMuiTheme } from "@material-ui/core";
-import { Slider } from "@material-ui/core";
 import { createMount } from '@material-ui/core/test-utils';
-import {ReactWrapper} from "enzyme"
 
 describe("<TimeSlider/>", () => {
     const total_steps = 501
@@ -18,223 +16,97 @@ describe("<TimeSlider/>", () => {
         mount.cleanUp()
     })
 
-    const createSlider=(min: number, max: number, value: number) => {
-        const onChange = (time: Number) => {}
+    const createSlider=(args: {value: number, step: number, num_steps: number, min: number, max: number}) => {
+        const {value, step, num_steps, min, max} = args
         const theme = createMuiTheme()
+
+        interface Props {
+            value: number
+            min: number
+            max: number
+            step: number
+            num_steps: number
+        }
+
+        const Wrapper: FunctionComponent<Props> = (props) => {
+            const [value, setValue] = useState(props.value)
+            const onChange = (time: number) => {
+                setValue(time)
+            }
+
+            return (
+                <ThemeProvider theme={theme}>
+                    <TimeSlider
+                        value={value}
+                        step={props.step}
+                        num_steps={props.num_steps}
+                        min={props.min}
+                        max={props.max}
+                        onChange={onChange}
+                    />
+                </ThemeProvider>
+            )
+        }
+
         const wrapper = mount(
-            <ThemeProvider theme={theme}>
-                <TimeSlider
+                <Wrapper
+                    value={value}
+                    step={step}
+                    num_steps={num_steps}
                     min={min}
                     max={max}
-                    value={value}
-                    onChange={onChange}
                 />
-            </ThemeProvider>
         )
-        const slider = wrapper.find(Slider)
-        const thumb = slider.find('[role="slider"]')
-        return {slider, thumb}
+        return wrapper
     }
 
-    let slider: ReturnType<typeof createSlider>["slider"]
-    let thumb: ReturnType<typeof createSlider>["thumb"]
+    let wrapper: ReturnType<typeof createSlider>
 
-    describe("when initialized with a symetric range", ()=> {
-        const min=10
-        const max =20 
-        const value = 15
+    const getThumb = () => {
+        return wrapper.find('[role="slider"]')
+    }
 
-        beforeEach(() => {
-            ({slider, thumb} = createSlider(min, max, value))
-        })
-
-        it("sets the internal value to zero", ()=> {
-            expect(slider.prop("value")).toBeFloat(0)
-        })
-        it("has an internal range with the correct size", ()=> {
-            expect(slider.prop("max") - slider.prop("min") + 1).toBeFloat(total_steps)
-        })
-        it("sets the internal min to negative half range", ()=> {
-            expect(slider.prop("min")).toBeFloat(-250)
-        })
-        it("sets the internal max to positive half range", ()=> {
-            expect(slider.prop("max")).toBeFloat(250)
-        })
-        it("sets the internal max to positive half range", ()=> {
-            expect(slider.prop("max")).toBeFloat(250)
-        })
-        it("sets the value correctly", ()=> {
-            expect(thumb.prop("aria-valuenow")).toBeFloat(value)
-        })
-        it("sets the minimum value correctly", ()=> {
-            expect(thumb.prop("aria-valuemin")).toBeFloat(min)
-        })
-        it("sets the maximum value correctly", ()=> {
-            expect(thumb.prop("aria-valuemax")).toBeFloat(max)
-        })
-    })
-
-    describe("when initialized with an asymetric range", ()=> {
-        const min=1
-        const max = 99
-        const value = 47
-        const ratio = (value - min) / (max - value)
-
-        beforeEach(() => {
-            ({slider, thumb} = createSlider(min, max, value))
-        })
-
-        it("sets the internal value to zero", ()=> {
-            expect(slider.prop("value")).toBeFloat(0)
-        })
-        it("has an internal range with the correct size", ()=> {
-            expect(slider.prop("max") - slider.prop("min") + 1).toBeFloat(total_steps)
-        })
-        it("sets the internal min to a negative value", ()=> {
-            expect(slider.prop("min")).toBeLessThan(0)
-        })
-        it("sets the internal max to positive value", ()=> {
-            expect(slider.prop("max")).toBeGreaterThan(0)
-        })
-        it("has the correct range ratio", ()=> {
-            expect(-slider.prop("min") / slider.prop("max")).toBeCloseTo(ratio)
-        })
-        it("sets the value correctly", ()=> {
-            expect(thumb.prop("aria-valuenow")).toBeFloat(value)
-        })
-        it("sets the minimum value correctly", ()=> {
-            expect(thumb.prop("aria-valuemin")).toBeFloat(min)
-        })
-        it("sets the maximum value correctly", ()=> {
-            expect(thumb.prop("aria-valuemax")).toBeFloat(max)
-        })
-    })
-
-    describe("when initialized with the same value as min", ()=> {
-        const min=1
-        const max = 99
-        const value = 1
-
-        beforeEach(() => {
-            ({slider, thumb} = createSlider(min, max, value))
-        })
-
-        it("sets the internal value to zero", ()=> {
-            expect(slider.prop("value")).toBeFloat(0)
-        })
-        it("has an internal range with the correct size", ()=> {
-            expect(slider.prop("max") - slider.prop("min") + 1).toBeFloat(total_steps)
-        })
-        it("sets the internal min to zero", ()=> {
-            expect(slider.prop("min")).toBeFloat(0)
-        })
-        it("sets the internal max to positive value", ()=> {
-            expect(slider.prop("max")).toBeGreaterThan(0)
-        })
-        it("sets the value correctly", ()=> {
-            expect(thumb.prop("aria-valuenow")).toBeFloat(value)
-        })
-        it("sets the minimum value correctly", ()=> {
-            expect(thumb.prop("aria-valuemin")).toBeFloat(min)
-        })
-        it("sets the maximum value correctly", ()=> {
-            expect(thumb.prop("aria-valuemax")).toBeFloat(max)
-        })
-    })
-
-    describe("when initialized with the same value as max", ()=> {
-        const min=1
-        const max = 99
-        const value = 99
-
-        beforeEach(() => {
-            ({slider, thumb} = createSlider(min, max, value))
-        })
-
-        it("sets the internal value to zero", ()=> {
-            expect(slider.prop("value")).toBeFloat(0)
-        })
-        it("has an internal range with the correct size", ()=> {
-            expect(slider.prop("max") - slider.prop("min") + 1).toBeFloat(total_steps)
-        })
-        it("sets the internal min to a negative value", ()=> {
-            expect(slider.prop("min")).toBeLessThan(0)
-        })
-        it("sets the internal max to 0", ()=> {
-            expect(slider.prop("max")).toBeFloat(0)
-        })
-        it("sets the value correctly", ()=> {
-            expect(thumb.prop("aria-valuenow")).toBeFloat(value)
-        })
-        it("sets the minimum value correctly", ()=> {
-            expect(thumb.prop("aria-valuemin")).toBeFloat(min)
-        })
-        it("sets the maximum value correctly", ()=> {
-            expect(thumb.prop("aria-valuemax")).toBeFloat(max)
-        })
-    })
-
-    describe("when initialized with a value very close to min", ()=> {
-        const min=-5.001
-        const max = 10
-        const value = -5.0 
-
-        beforeEach(() => {
-            ({slider, thumb} = createSlider(min, max, value))
-        })
-
-        it("sets the internal value to zero", ()=> {
-            expect(slider.prop("value")).toBeFloat(0)
-        })
-        it("has an internal range with the correct size", ()=> {
-            expect(slider.prop("max") - slider.prop("min") + 1).toBeFloat(total_steps)
-        })
-        it("sets a one step min range", ()=> {
-            expect(slider.prop("min")).toBeFloat(-1)
-        })
-        it("sets the internal max to positive value", ()=> {
-            expect(slider.prop("max")).toBeGreaterThan(0)
-        })
-        it("sets the value correctly", ()=> {
-            expect(thumb.prop("aria-valuenow")).toBeFloat(value)
-        })
-        it("sets the minimum value correctly", ()=> {
-            expect(thumb.prop("aria-valuemin")).toBeFloat(min)
-        })
-        it("sets the maximum value correctly", ()=> {
-            expect(thumb.prop("aria-valuemax")).toBeFloat(max)
-        })
-    })
-
-    describe("when initialized with a value very close to max", ()=> {
-        const min=-5
-        const max = 10.001
-        const value = 10.0
-
-        beforeEach(() => {
-            ({slider, thumb} = createSlider(min, max, value))
-        })
-
-        it("sets the internal value to zero", ()=> {
-            expect(slider.prop("value")).toBeFloat(0)
-        })
-        it("has an internal range with the correct size", ()=> {
-            expect(slider.prop("max") - slider.prop("min") + 1).toBeFloat(total_steps)
-        })
-        it("sets the internal min to a negative value", ()=> {
-            expect(slider.prop("min")).toBeLessThan(0)
-        })
-        it("sets a one step max range", ()=> {
-            expect(slider.prop("max")).toBeFloat(1)
-        })
-        it("sets the value correctly", ()=> {
-            expect(thumb.prop("aria-valuenow")).toBeFloat(value)
-        })
-        it("sets the minimum value correctly", ()=> {
-            expect(thumb.prop("aria-valuemin")).toBeFloat(min)
-        })
-        it("sets the maximum value correctly", ()=> {
-            expect(thumb.prop("aria-valuemax")).toBeFloat(max)
+    describe("when initialized with one pixel per step", () => {
+        const num_pixels = 1001
+        const num_steps = 1001
+        const step = 1
+        describe("when the range matches exactly", () => {
+            const value = 500
+            const min = 0
+            const max = 1000
+            beforeEach(() => {
+                wrapper = createSlider({value, step, num_steps, min, max})
+            })
+            it("sets the initial value corectly", () => {
+                expect(getThumb().prop("aria-valuenow")).toBeFloat(value)
+            })
+            it("sets min correctly", () => {
+                expect(getThumb().prop("aria-valuemin")).toBeFloat(min)
+            })
+            it("sets max correctly", () => {
+                expect(getThumb().prop("aria-valuemax")).toBeFloat(max)
+            })
+            it("increments when moving forward", () => {
+                getThumb().simulate("keyDown", {key: "ArrowRight"})
+                expect(getThumb().prop("aria-valuenow")).toBeFloat(value+1)
+            })
+            it("decrements when moving backward", () => {
+                getThumb().simulate("keyDown", {key: "ArrowLeft"})
+                expect(getThumb().prop("aria-valuenow")).toBeFloat(value-1)
+            })
+            it("returns to the same value when moving forward and back", () => {
+                getThumb().simulate("keyDown", {key: "ArrowRight"})
+                getThumb().simulate("keyDown", {key: "ArrowLeft"})
+                expect(getThumb().prop("aria-valuenow")).toBeFloat(value)
+            })
+            it("moves to the end when pressing end", () => {
+                getThumb().simulate("keyDown", {key: "End"})
+                expect(getThumb().prop("aria-valuenow")).toBeFloat(max)
+            })
+            it("moves to the start when pressing home", () => {
+                getThumb().simulate("keyDown", {key: "Home"})
+                expect(getThumb().prop("aria-valuenow")).toBeFloat(min)
+            })
         })
     })
 })

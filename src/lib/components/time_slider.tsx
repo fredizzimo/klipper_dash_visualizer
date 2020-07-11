@@ -15,70 +15,39 @@ interface Props {
     value: number
     min: number
     max: number
+    step: number
+    num_steps: number
     onChange : (value: number) => void
 }
 
 export const TimeSlider: FunctionComponent<Props> = (props) => {
-    const [current_step, setCurrentStep] = useState(0);
-    const [original_value, setOriginalValue] = useState(props.value)
-    const [original_min, setOriginalMin] = useState(props.min)
-    const [original_max, setOriginalMax] = useState(props.max)
     const [changing, setChanging] = useState(false)
 
     useEffect(()=> {
         if (!changing) {
-            setCurrentStep(0)
-            setOriginalMin(props.min)
-            setOriginalMax(props.max)
-            setOriginalValue(props.value)
         }
-    }, [changing, props.min, props.max, props.value])
-
-    const total_steps = 501;
-
-    const range_min = original_value - original_min
-    const range_max = original_max - original_value
-    const ratio = range_min / (range_min + range_max)
-    // Note zero is included in the max range
-    let range_min_steps = Math.round((total_steps-1) * ratio)
-    // Require at least one step for the minimum range
-    if (range_min_steps == 0 && original_min != original_value) {
-        range_min_steps = 1
-    }
-    let range_max_steps = total_steps - 1 - range_min_steps
-    if (range_max_steps == 0 && original_max != original_value) {
-        range_max_steps++;
-        range_min_steps--;
-    }
+    }, [changing])
 
     const getActualValue = function(step: number) {
-        if (step==0) {
-            return original_value
-        } else if (step < 0) {
-            return original_value + step * (range_min/range_min_steps)
-        } else {
-            return original_value + step * (range_max/range_max_steps)
-        }   
+        return step
     }
 
     const onChangeCb = function(_:any, new_step: number) {
-        setCurrentStep(new_step)
         setChanging(true)
-        const actual_value = getActualValue(new_step)
-        props.onChange(actual_value)
+        props.onChange(new_step)
     }
 
     const onChangeCommittedCb = function(_:any, new_step: number) {
         setChanging(false)
-        const actual_value = getActualValue(new_step)
-        props.onChange(actual_value)
+        props.onChange(new_step)
     }
 
     return (
         <StyledSlider
-            min={-range_min_steps}
-            max={range_max_steps}
-            value={current_step}
+            min={props.min}
+            max={props.max}
+            value={props.value}
+            step={props.step}
             onChange={onChangeCb}
             onChangeCommitted={onChangeCommittedCb}
             valueLabelDisplay="auto"
