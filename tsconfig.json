@@ -10,5 +10,10 @@
         "moduleResolution": "node",
         "resolveJsonModule": true,
         "sourceMap": true
-    }
+    },
+    "exclude": [
+        "**/node_modules/*",
+        "klipper_dash_visualizer",
+        "dist",
+    ]
 }

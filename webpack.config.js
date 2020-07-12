@@ -55,7 +55,11 @@ module.exports = (env, argv) => {
             rules: [
                 {
                     test: /\.jsx?$/,
-                    exclude: /node_modules/,
+                    exclude: [
+                        /node_modules/,
+                        /dist/,
+                        /klipper_dash_visualizer/
+                    ],
                     use: {
                         loader: 'babel-loader',
                         options: {
@@ -80,7 +84,11 @@ module.exports = (env, argv) => {
                 {
                     test: /\.tsx?$/,
                     use: 'ts-loader',
-                    exclude: /node_modules/,
+                    exclude: [
+                        /node_modules/,
+                        /dist/,
+                        /klipper_dash_visualizer/
+                    ]
                 },
                 {
                     test: /\.(woff(2)?|ttf|eot|svg)(\?v=\d+\.\d+\.\d+)?$/,
