@@ -92,7 +92,7 @@ describe("<TimeSlider/>", () => {
     }
 
     const getValue = () => {
-        return getThumb().prop("aria-valuenow")
+        return wrapper.find(TimeSlider).prop("value")
     }
 
     const getMin = () => {
@@ -139,12 +139,18 @@ describe("<TimeSlider/>", () => {
 
     const tests = [
     //  value   |min    |max    |step   |steps  |pixels |mouse steps
-        [500,    0,      1000,   1,     1000,   1000,   1]
+        ["exact pixel to step ratio",
+         500,   0,      1000,   1,     1000,   1000,   1],
+        ["min and max not divisible by steps",
+         3.6,   -2.5,   7.35,    0.2,    100,   1000,   1]
     ]
-    describe.each(tests)("when value: %d, min: %d, max: %d, step: %d, num_steps: %d, num_pixels: %d",
-        (value: number, min: number, max: number, step: number, num_steps: number, num_pixels: number, mouse_steps: number) => {
+    describe.each(tests)("when %s (value: %d, min: %d, max: %d, step: %d, num_steps: %d, num_pixels: %d)",
+        (description: string, value: number, min: number, max: number, step: number, num_steps: number, num_pixels: number, mouse_steps: number) => {
+
+        let mouse_step: number
         beforeEach(() => {
             wrapper = createSlider({value, step, num_steps, min, max, num_pixels})
+            mouse_step = mouse_steps*step
         })
         const ratio_to_pixel = (ratio: number) => {
             return Math.round(num_pixels*ratio)
@@ -163,12 +169,6 @@ describe("<TimeSlider/>", () => {
 
         it("sets the initial value corectly", () => {
             assertThat(getValue(), closeToTolerance(value))
-        })
-        it("sets min correctly", () => {
-            assertThat(getMin(), closeToTolerance(min))
-        })
-        it("sets max correctly", () => {
-            assertThat(getMax(), closeToTolerance(max))
         })
         it("increments when moving forward", () => {
             pressRight()
@@ -193,24 +193,24 @@ describe("<TimeSlider/>", () => {
         })
         it("does not change value when clicking in the value position", () => {
             mouseDown(value_to_pixel(value))
-            assertThat(getValue(), closeTo(value, mouse_steps))
+            assertThat(getValue(), closeTo(value, mouse_step+tolerance))
             mouseUp(value_to_pixel(value))
-            assertThat(getValue(), closeTo(value, mouse_steps))
+            assertThat(getValue(), closeTo(value, mouse_step+tolerance))
             mouseUp(value_to_pixel(value))
         })
         it("changes value when clicking", () => {
             // Note we allow the value to vary by one extra mouse step
             mouseDown(ratio_to_pixel(0.37))
-            assertThat(getValue(), closeTo(ratio_to_value(0.37), mouse_steps*2))
+            assertThat(getValue(), closeTo(ratio_to_value(0.37), mouse_step*2+tolerance))
             mouseUp(ratio_to_pixel(0.37))
-            assertThat(getValue(), closeTo(ratio_to_value(0.37), mouse_steps*2))
+            assertThat(getValue(), closeTo(ratio_to_value(0.37), mouse_step*2+tolerance))
         })
         it("changes value when clicking another position", () => {
             // Note we allow the value to vary by one extra mouse step
             mouseDown(ratio_to_pixel(0.79))
-            assertThat(getValue(), closeTo(ratio_to_value(0.79), mouse_steps*2))
+            assertThat(getValue(), closeTo(ratio_to_value(0.79), mouse_step*2+tolerance))
             mouseUp(ratio_to_pixel(0.79))
-            assertThat(getValue(), closeTo(ratio_to_value(0.79), mouse_steps*2))
+            assertThat(getValue(), closeTo(ratio_to_value(0.79), mouse_step*2+tolerance))
         })
         it("can drag mouse through all values with mouse steps", () => {
             const tolerance = 1e-12
@@ -222,12 +222,13 @@ describe("<TimeSlider/>", () => {
             for(let i=start_pixel;i>=0;--i) {
                 mouseMove(i)
                 const new_value = getValue()
+                const prev_step_value = Math.max(current_value - mouse_step, min)
                 assertThat(new_value, 
                     anyOf(
                         closeTo(current_value, tolerance),
-                        closeTo(current_value-mouse_steps, tolerance)
+                        closeTo(prev_step_value, tolerance)
                 ))
-                if (Math.abs(current_value - new_value)<=mouse_steps+tolerance) {
+                if (Math.abs(new_value - prev_step_value)<=tolerance) {
                     current_value = new_value
                 }
             }
@@ -239,12 +240,13 @@ describe("<TimeSlider/>", () => {
             for(let i=start_pixel;i<num_pixels+10;++i) {
                 mouseMove(i)
                 const new_value = getValue()
+                const next_step_value = Math.min(current_value + mouse_step, max)
                 assertThat(new_value, 
                     anyOf(
                         closeTo(current_value, tolerance),
-                        closeTo(current_value+mouse_steps, tolerance)
+                        closeTo(next_step_value, tolerance)
                 ))
-                if (Math.abs(current_value - new_value)<=mouse_steps+tolerance) {
+                if (Math.abs(new_value - next_step_value)<=tolerance) {
                     current_value = new_value
                 }
             }

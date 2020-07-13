@@ -22,29 +22,46 @@ interface Props {
 
 export const TimeSlider: FunctionComponent<Props> = (props) => {
     const [changing, setChanging] = useState(false)
+    const [originalValue, setOriginalValue] = useState(props.value)
 
     useEffect(()=> {
         if (!changing) {
+            setOriginalValue(props.value)
         }
-    }, [changing])
+    }, [changing, props.value])
 
-    const getActualValue = function(step: number) {
-        return step
+    const getActualValue = function(value: number) {
+        return Math.max(value, props.min) 
     }
 
     const onChangeCb = function(_:any, new_step: number) {
         setChanging(true)
-        props.onChange(new_step)
+        const actual_value = getActualValue(new_step)
+        props.onChange(actual_value)
     }
 
     const onChangeCommittedCb = function(_:any, new_step: number) {
         setChanging(false)
-        props.onChange(new_step)
+        const actual_value = getActualValue(new_step)
+        setOriginalValue(actual_value)
+        props.onChange(actual_value)
     }
+    const tolerance = 1e-12
+
+    const mid_value = changing ? originalValue : props.value
+
+    const min_range = mid_value - props.min
+    let num_min_steps = Math.floor(min_range) / props.step
+    const rest = min_range - num_min_steps * props.step
+    if (rest >= tolerance) {
+        num_min_steps++
+    }
+
+    const start = originalValue - num_min_steps*props.step
 
     return (
         <StyledSlider
-            min={props.min}
+            min={start}
             max={props.max}
             value={props.value}
             step={props.step}
