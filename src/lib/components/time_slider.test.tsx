@@ -142,7 +142,9 @@ describe("<TimeSlider/>", () => {
         ["exact pixel to step ratio",
          500,   0,      1000,   1,     1000,   1000,   1],
         ["min and max not divisible by steps",
-         3.6,   -2.5,   7.35,    0.2,    100,   1000,   1]
+         3.6,   -2.5,   7.35,    0.2,    100,   1000,   1],
+        ["value not divisible by steps",
+         4.35,   -1.1,   6,    0.2,    100,   1000,   1]
     ]
     describe.each(tests)("when %s (value: %d, min: %d, max: %d, step: %d, num_steps: %d, num_pixels: %d)",
         (description: string, value: number, min: number, max: number, step: number, num_steps: number, num_pixels: number, mouse_steps: number) => {
@@ -250,6 +252,8 @@ describe("<TimeSlider/>", () => {
                     current_value = new_value
                 }
             }
+            mouseUp(start_pixel)
+            assertThat(getValue(), closeTo(value, tolerance))
         })
     })
 })

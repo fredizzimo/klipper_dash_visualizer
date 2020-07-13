@@ -31,7 +31,7 @@ export const TimeSlider: FunctionComponent<Props> = (props) => {
     }, [changing, props.value])
 
     const getActualValue = function(value: number) {
-        return Math.max(value, props.min) 
+        return Math.min(Math.max(value, props.min), props.max)
     }
 
     const onChangeCb = function(_:any, new_step: number) {
@@ -47,24 +47,36 @@ export const TimeSlider: FunctionComponent<Props> = (props) => {
         props.onChange(actual_value)
     }
     const tolerance = 1e-12
+    // Material-Ui automatically calculates the step precision, and all the returned values are rounded to that
+    // Add a small delta to work around that
+    const step_precision_force = 1e-16
 
     const mid_value = changing ? originalValue : props.value
 
     const min_range = mid_value - props.min
-    let num_min_steps = Math.floor(min_range) / props.step
-    const rest = min_range - num_min_steps * props.step
+    let num_min_steps = Math.floor(min_range / props.step)
+    let rest = min_range - num_min_steps * props.step
     if (rest >= tolerance) {
         num_min_steps++
     }
 
     const start = originalValue - num_min_steps*props.step
 
+    const full_range = props.max - start
+    let num_full_steps = Math.floor(full_range / props.step)
+    rest = full_range - num_full_steps * props.step
+    if (rest >= tolerance) {
+        num_full_steps++;
+    }
+    const end = start + num_full_steps * props.step
+    
+
     return (
         <StyledSlider
             min={start}
-            max={props.max}
+            max={end}
             value={props.value}
-            step={props.step}
+            step={props.step + step_precision_force}
             onChange={onChangeCb}
             onChangeCommitted={onChangeCommittedCb}
             valueLabelDisplay="auto"
