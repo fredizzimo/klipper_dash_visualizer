@@ -8,6 +8,11 @@ import { assertThat, closeTo, anyOf } from "hamjest"
 
 
 describe("<TimeSlider/>", () => {
+    const tolerance = 1e-12
+    const closeToTolerance = (value: number) => {
+        return closeTo(value, tolerance)
+    }
+
     let mount: ReturnType<typeof createMount>
 
     beforeAll(() => {
@@ -157,61 +162,62 @@ describe("<TimeSlider/>", () => {
         }
 
         it("sets the initial value corectly", () => {
-            expect(getValue()).toBeFloat(value)
+            assertThat(getValue(), closeToTolerance(value))
         })
         it("sets min correctly", () => {
-            expect(getMin()).toBeFloat(min)
+            assertThat(getMin(), closeToTolerance(min))
         })
         it("sets max correctly", () => {
-            expect(getMax()).toBeFloat(max)
+            assertThat(getMax(), closeToTolerance(max))
         })
         it("increments when moving forward", () => {
             pressRight()
-            expect(getValue()).toBeFloat(value+step)
+            assertThat(getValue(), closeToTolerance(value+step))
         })
         it("decrements when moving backward", () => {
             pressLeft()
-            expect(getValue()).toBeFloat(value-step)
+            assertThat(getValue(), closeToTolerance(value-step))
         })
         it("returns to the same value when moving forward and back", () => {
             pressRight()
             pressLeft()
-            expect(getValue()).toBeFloat(value)
+            assertThat(getValue(), closeToTolerance(value))
         })
         it("moves to the end when pressing end", () => {
             pressEnd()
-            expect(getValue()).toBeFloat(max)
+            assertThat(getValue(), closeToTolerance(max))
         })
         it("moves to the start when pressing home", () => {
             pressHome()
-            expect(getValue()).toBeFloat(min)
+            assertThat(getValue(), closeToTolerance(min))
         })
         it("does not change value when clicking in the value position", () => {
             mouseDown(value_to_pixel(value))
-            expect(getValue()).toBeFloat(value, mouse_steps)
+            assertThat(getValue(), closeTo(value, mouse_steps))
             mouseUp(value_to_pixel(value))
-            expect(getValue()).toBeFloat(value, mouse_steps)
+            assertThat(getValue(), closeTo(value, mouse_steps))
+            mouseUp(value_to_pixel(value))
         })
         it("changes value when clicking", () => {
             // Note we allow the value to vary by one extra mouse step
             mouseDown(ratio_to_pixel(0.37))
-            expect(getValue()).toBeFloat(ratio_to_value(0.37), mouse_steps*2)
+            assertThat(getValue(), closeTo(ratio_to_value(0.37), mouse_steps*2))
             mouseUp(ratio_to_pixel(0.37))
-            expect(getValue()).toBeFloat(ratio_to_value(0.37), mouse_steps*2)
+            assertThat(getValue(), closeTo(ratio_to_value(0.37), mouse_steps*2))
         })
         it("changes value when clicking another position", () => {
             // Note we allow the value to vary by one extra mouse step
             mouseDown(ratio_to_pixel(0.79))
-            expect(getValue()).toBeFloat(ratio_to_value(0.79), mouse_steps*2)
+            assertThat(getValue(), closeTo(ratio_to_value(0.79), mouse_steps*2))
             mouseUp(ratio_to_pixel(0.79))
-            expect(getValue()).toBeFloat(ratio_to_value(0.79), mouse_steps*2)
+            assertThat(getValue(), closeTo(ratio_to_value(0.79), mouse_steps*2))
         })
         it("can drag mouse through all values with mouse steps", () => {
             const tolerance = 1e-12
             const start_pixel = value_to_pixel(value)
             let current_value = value
             mouseDown(start_pixel)
-            expect(getValue()).toBeFloat(value, mouse_steps)
+            assertThat(getValue(), closeToTolerance(value))
             // Drag backwards towards min
             for(let i=start_pixel;i>=0;--i) {
                 mouseMove(i)
