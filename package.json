@@ -33,7 +33,8 @@
     },
     "setupFilesAfterEnv": [
       "jest-enzyme",
-      "<rootDir>/lib/jest_setup.ts"
+      "<rootDir>/lib/jest_setup.ts",
+      "jest-extended"
     ],
     "testEnvironment": "enzyme",
     "testEnvironmentOptions": {
@@ -74,6 +75,7 @@
     "eslint-plugin-import": "^2.18.0",
     "eslint-plugin-react": "^7.14.2",
     "file-loader": "^6.0.0",
+    "hamjest": "^3.7.1",
     "jest": "^26.1.0",
     "jest-environment-enzyme": "^7.1.2",
     "jest-enzyme": "^7.1.2",

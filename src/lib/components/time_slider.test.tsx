@@ -4,6 +4,7 @@ import { ThemeProvider, createMuiTheme, Slider } from "@material-ui/core";
 import { createMount } from '@material-ui/core/test-utils';
 import {stub} from "sinon"
 import {act} from "react-dom/test-utils"
+import { assertThat, closeTo, anyOf } from "hamjest"
 
 
 describe("<TimeSlider/>", () => {
@@ -131,72 +132,116 @@ describe("<TimeSlider/>", () => {
         simulateEvent("mousemove", {clientX: x, clientY: 0})
     }
 
-    describe("when initialized with one pixel per step", () => {
-        const num_pixels = 1000
-        const num_steps = 1000
-        const step = 1
-        describe("when the range matches exactly", () => {
-            const value = 500
-            const min = 0
-            const max = 1000
-            beforeEach(() => {
-                wrapper = createSlider({value, step, num_steps, min, max, num_pixels})
-            })
-            it("sets the initial value corectly", () => {
-                expect(getValue()).toBeFloat(value)
-            })
-            it("sets min correctly", () => {
-                expect(getMin()).toBeFloat(min)
-            })
-            it("sets max correctly", () => {
-                expect(getMax()).toBeFloat(max)
-            })
-            it("increments when moving forward", () => {
-                pressRight()
-                expect(getValue()).toBeFloat(value+1)
-            })
-            it("decrements when moving backward", () => {
-                pressLeft()
-                expect(getValue()).toBeFloat(value-1)
-            })
-            it("returns to the same value when moving forward and back", () => {
-                pressRight()
-                pressLeft()
-                expect(getValue()).toBeFloat(value)
-            })
-            it("moves to the end when pressing end", () => {
-                pressEnd()
-                expect(getValue()).toBeFloat(max)
-            })
-            it("moves to the start when pressing home", () => {
-                pressHome()
-                expect(getValue()).toBeFloat(min)
-            })
-            it("does not change value when clicking in the middle", () => {
-                mouseDown(value)
-                expect(getValue()).toBeFloat(value)
-                mouseUp(value)
-                expect(getValue()).toBeFloat(value)
-            })
-            it("changes value when clicking", () => {
-                mouseDown(307)
-                expect(getValue()).toBeFloat(307)
-                mouseUp(307)
-                expect(getValue()).toBeFloat(307)
-            })
-            it("handles mouse dragging", () => {
-                mouseDown(600)
-                expect(getValue()).toBeFloat(600)
-                mouseMove(700)
-                expect(getValue()).toBeFloat(700)
-                // Note: The actual mouse curser is outside the slider here
-                mouseMove(max)
-                expect(getValue()).toBeFloat(max)
-                mouseMove(min)
-                expect(getValue()).toBeFloat(min)
-                mouseMove(value)
-                expect(getValue()).toBeFloat(value)
-            })
+    const tests = [
+    //  value   |min    |max    |step   |steps  |pixels |mouse steps
+        [500,    0,      1000,   1,     1000,   1000,   1]
+    ]
+    describe.each(tests)("when value: %d, min: %d, max: %d, step: %d, num_steps: %d, num_pixels: %d",
+        (value: number, min: number, max: number, step: number, num_steps: number, num_pixels: number, mouse_steps: number) => {
+        beforeEach(() => {
+            wrapper = createSlider({value, step, num_steps, min, max, num_pixels})
+        })
+        const ratio_to_pixel = (ratio: number) => {
+            return Math.round(num_pixels*ratio)
+        }
+
+        const value_to_pixel = (value: number) => {
+            const range = max - min
+            const relative_value = value - min
+            return ratio_to_pixel(relative_value / range)
+        }
+
+        const ratio_to_value = (ratio: number) => {
+            const range = max - min
+            return min + range*ratio
+        }
+
+        it("sets the initial value corectly", () => {
+            expect(getValue()).toBeFloat(value)
+        })
+        it("sets min correctly", () => {
+            expect(getMin()).toBeFloat(min)
+        })
+        it("sets max correctly", () => {
+            expect(getMax()).toBeFloat(max)
+        })
+        it("increments when moving forward", () => {
+            pressRight()
+            expect(getValue()).toBeFloat(value+step)
+        })
+        it("decrements when moving backward", () => {
+            pressLeft()
+            expect(getValue()).toBeFloat(value-step)
+        })
+        it("returns to the same value when moving forward and back", () => {
+            pressRight()
+            pressLeft()
+            expect(getValue()).toBeFloat(value)
+        })
+        it("moves to the end when pressing end", () => {
+            pressEnd()
+            expect(getValue()).toBeFloat(max)
+        })
+        it("moves to the start when pressing home", () => {
+            pressHome()
+            expect(getValue()).toBeFloat(min)
+        })
+        it("does not change value when clicking in the value position", () => {
+            mouseDown(value_to_pixel(value))
+            expect(getValue()).toBeFloat(value, mouse_steps)
+            mouseUp(value_to_pixel(value))
+            expect(getValue()).toBeFloat(value, mouse_steps)
+        })
+        it("changes value when clicking", () => {
+            // Note we allow the value to vary by one extra mouse step
+            mouseDown(ratio_to_pixel(0.37))
+            expect(getValue()).toBeFloat(ratio_to_value(0.37), mouse_steps*2)
+            mouseUp(ratio_to_pixel(0.37))
+            expect(getValue()).toBeFloat(ratio_to_value(0.37), mouse_steps*2)
+        })
+        it("changes value when clicking another position", () => {
+            // Note we allow the value to vary by one extra mouse step
+            mouseDown(ratio_to_pixel(0.79))
+            expect(getValue()).toBeFloat(ratio_to_value(0.79), mouse_steps*2)
+            mouseUp(ratio_to_pixel(0.79))
+            expect(getValue()).toBeFloat(ratio_to_value(0.79), mouse_steps*2)
+        })
+        it("can drag mouse through all values with mouse steps", () => {
+            const tolerance = 1e-12
+            const start_pixel = value_to_pixel(value)
+            let current_value = value
+            mouseDown(start_pixel)
+            expect(getValue()).toBeFloat(value, mouse_steps)
+            // Drag backwards towards min
+            for(let i=start_pixel;i>=0;--i) {
+                mouseMove(i)
+                const new_value = getValue()
+                assertThat(new_value, 
+                    anyOf(
+                        closeTo(current_value, tolerance),
+                        closeTo(current_value-mouse_steps, tolerance)
+                ))
+                if (Math.abs(current_value - new_value)<=mouse_steps+tolerance) {
+                    current_value = new_value
+                }
+            }
+            assertThat(getValue(), closeTo(min, tolerance))
+            mouseMove(start_pixel)
+            current_value = getValue()
+            assertThat(current_value, closeTo(value, tolerance))
+            // Drag slightly past the end to make sure that the last value is included
+            for(let i=start_pixel;i<num_pixels+10;++i) {
+                mouseMove(i)
+                const new_value = getValue()
+                assertThat(new_value, 
+                    anyOf(
+                        closeTo(current_value, tolerance),
+                        closeTo(current_value+mouse_steps, tolerance)
+                ))
+                if (Math.abs(current_value - new_value)<=mouse_steps+tolerance) {
+                    current_value = new_value
+                }
+            }
         })
     })
 })
