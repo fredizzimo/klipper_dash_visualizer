@@ -16,7 +16,7 @@ interface Props {
     min: number
     max: number
     step: number
-    num_steps: number
+    max_steps: number
     onChange : (value: number) => void
 }
 
@@ -54,22 +54,40 @@ export const TimeSlider: FunctionComponent<Props> = (props) => {
     const mid_value = changing ? originalValue : props.value
 
     const min_range = mid_value - props.min
-    let num_min_steps = Math.floor(min_range / props.step)
-    let rest = min_range - num_min_steps * props.step
+    let num_min_intervals = Math.floor(min_range / props.step)
+    let rest = min_range - num_min_intervals * props.step
     if (rest >= tolerance) {
-        num_min_steps++
+        num_min_intervals++
     }
 
-    const start = originalValue - num_min_steps*props.step
+    let start = originalValue - num_min_intervals*props.step
 
     const full_range = props.max - start
-    let num_full_steps = Math.floor(full_range / props.step)
-    rest = full_range - num_full_steps * props.step
+    let num_full_intervals = Math.floor(full_range / props.step)
+    rest = full_range - num_full_intervals * props.step
     if (rest >= tolerance) {
-        num_full_steps++;
+        num_full_intervals++;
     }
-    const end = start + num_full_steps * props.step
-    
+    let end = start + num_full_intervals * props.step
+
+    // Make sure that we don't exceed the maximum allowed steps
+    if (num_full_intervals + 1 > props.max_steps) {
+        const min_half = Math.floor(props.max_steps / 2.0)
+        const min_start = mid_value - min_half*props.step
+
+        // Start is the absolute minimum allowed
+        start = Math.max(start, min_start)
+
+        const new_end = start + props.max_steps*props.step
+
+        // If we exceed the end, shift the range
+        if (new_end > end) {
+            start -= new_end - end
+            end = end
+        } else {
+            end = new_end
+        }
+    }
 
     return (
         <StyledSlider

@@ -52,7 +52,7 @@ export class RangeSelect extends Component<Props, State>
                             value={this.props.selected_time[0]}
                             onChange={this.onMinTimeChanged}
                             step={1}
-                            num_steps={1}
+                            max_steps={1}
                         />
                     </Grid>
                     <Grid item xs={4}>

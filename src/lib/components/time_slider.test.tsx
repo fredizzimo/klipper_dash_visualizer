@@ -46,7 +46,7 @@ describe("<TimeSlider/>", () => {
                     <TimeSlider
                         value={value}
                         step={props.step}
-                        num_steps={props.num_steps}
+                        max_steps={props.num_steps}
                         min={props.min}
                         max={props.max}
                         onChange={onChange}
@@ -138,16 +138,23 @@ describe("<TimeSlider/>", () => {
     }
 
     const tests = [
-    //  value   |min    |max    |step   |steps  |pixels |mouse steps
+    //  value   |min    |max    |step   |steps  |pixels |m.steps|e.min  |e.max
         ["exact pixel to step ratio",
-         500,   0,      1000,   1,     1000,   1000,   1],
+        500,    0,      1000,   1,      1000,   1000,   1,      0,      1000],
         ["min and max not divisible by steps",
-         3.6,   -2.5,   7.35,    0.2,    100,   1000,   1],
+        3.6,    -2.5,   7.35,   0.2,    100,    1000,   1,      -2.5,   7.35],
         ["value not divisible by steps",
-         4.35,   -1.1,   6,    0.2,    100,   1000,   1]
+        4.35,   -1.1,   6,      0.2,    100,    1000,   1,      -1.1,   6],
+        ["does not reach min and max",
+        4.35,   -1.1,   10,      0.2,    20,    1000,   1,      2.35,   6.35],
+        ["does not reach max",
+        4.35,   2.55,   10,      0.2,    20,    1000,   1,      2.55,   6.55],
+        ["does not reach min",
+        5,      0,      6,       0.2,    20,    1000,   1,      2,      6]
     ]
     describe.each(tests)("when %s (value: %d, min: %d, max: %d, step: %d, num_steps: %d, num_pixels: %d)",
-        (description: string, value: number, min: number, max: number, step: number, num_steps: number, num_pixels: number, mouse_steps: number) => {
+        (description: string, value: number, min: number, max: number, step: number, num_steps: number, num_pixels: number, mouse_steps: number,
+             exp_min: number, exp_max: number) => {
 
         let mouse_step: number
         beforeEach(() => {
@@ -159,14 +166,14 @@ describe("<TimeSlider/>", () => {
         }
 
         const value_to_pixel = (value: number) => {
-            const range = max - min
-            const relative_value = value - min
+            const range = exp_max - exp_min
+            const relative_value = value - exp_min
             return ratio_to_pixel(relative_value / range)
         }
 
         const ratio_to_value = (ratio: number) => {
-            const range = max - min
-            return min + range*ratio
+            const range = exp_max - exp_min
+            return exp_min + range*ratio
         }
 
         it("sets the initial value corectly", () => {
@@ -187,11 +194,11 @@ describe("<TimeSlider/>", () => {
         })
         it("moves to the end when pressing end", () => {
             pressEnd()
-            assertThat(getValue(), closeToTolerance(max))
+            assertThat(getValue(), closeToTolerance(exp_max))
         })
         it("moves to the start when pressing home", () => {
             pressHome()
-            assertThat(getValue(), closeToTolerance(min))
+            assertThat(getValue(), closeToTolerance(exp_min))
         })
         it("does not change value when clicking in the value position", () => {
             mouseDown(value_to_pixel(value))
@@ -224,7 +231,7 @@ describe("<TimeSlider/>", () => {
             for(let i=start_pixel;i>=0;--i) {
                 mouseMove(i)
                 const new_value = getValue()
-                const prev_step_value = Math.max(current_value - mouse_step, min)
+                const prev_step_value = Math.max(current_value - mouse_step, exp_min)
                 assertThat(new_value, 
                     anyOf(
                         closeTo(current_value, tolerance),
@@ -234,7 +241,7 @@ describe("<TimeSlider/>", () => {
                     current_value = new_value
                 }
             }
-            assertThat(getValue(), closeTo(min, tolerance))
+            assertThat(getValue(), closeTo(exp_min, tolerance))
             mouseMove(start_pixel)
             current_value = getValue()
             assertThat(current_value, closeTo(value, tolerance))
