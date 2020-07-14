@@ -24,7 +24,7 @@ export const TimeSlider: FunctionComponent<Props> = (props) => {
     const tolerance = 1e-12
     // Material-Ui automatically calculates the step precision, and all the returned values are rounded to that
     // Add a small delta to work around that
-    const step_precision_force = 1e-16
+    const step_precision_force = 1e-13
 
     const [changing, setChanging] = useState(false)
     const [originalValue, setOriginalValue] = useState(props.value)
@@ -77,6 +77,10 @@ export const TimeSlider: FunctionComponent<Props> = (props) => {
         }
     }
 
+    const roundValueToStep = (value: number, step: number, min: number) => {
+        return Math.round((value - min) / step) * step + min;
+    }
+
     const mid_value = changing ? originalValue : props.value
 
     const num_min_intervals = getNumberOfIntervals(props.min, mid_value)
@@ -113,6 +117,8 @@ export const TimeSlider: FunctionComponent<Props> = (props) => {
         step_multiplier = getMouseStepMultiplier(rect)
     }
 
+    const step = props.step * step_multiplier + step_precision_force
+
     useEffect(()=> {
         if (!changing) {
             setOriginalValue(props.value)
@@ -133,6 +139,8 @@ export const TimeSlider: FunctionComponent<Props> = (props) => {
     }, [changing, props.value])
 
     const getActualValue = function(event: any, value: number) {
+        value = roundValueToStep(value, props.step, start)
+
         if (draggingMouse) {
             const rect = ref.current.getBoundingClientRect()
             if (event instanceof MouseEvent && event.clientX < rect.x) {
@@ -172,7 +180,7 @@ export const TimeSlider: FunctionComponent<Props> = (props) => {
             min={start}
             max={end}
             value={value}
-            step={props.step * step_multiplier + step_precision_force}
+            step={step}
             onChange={onChangeCb}
             onChangeCommitted={onChangeCommittedCb}
             valueLabelDisplay="auto"

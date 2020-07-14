@@ -8,7 +8,7 @@ import { assertThat, closeTo, anyOf, falsy } from "hamjest"
 
 
 describe("<TimeSlider/>", () => {
-    const tolerance = 1e-12
+    const tolerance = 1e-9
     const mouse_left = 10
     const closeToTolerance = (value: number) => {
         return closeTo(value, tolerance)
@@ -146,12 +146,14 @@ describe("<TimeSlider/>", () => {
         3.6,    -2.5,   7.35,   0.2,    100,    1000,   1,      -2.5,   7.35],
         ["value not divisible by steps",
         4.35,   -1.1,   6,      0.2,    100,    1000,   1,      -1.1,   6],
+        ["fractional values whole step",
+        4.35326,-3.5466,19.9232,1,      100,    100,   1,      -3.5466,   19.9232],
         ["does not reach min and max",
-        4.35,   -1.1,   10,      0.2,    20,    1000,   1,      2.35,   6.35],
+        4.35,   -1.1,   10,      0.2,   20,     1000,   1,      2.35,   6.35],
         ["does not reach max",
-        4.35,   2.55,   10,      0.2,    20,    1000,   1,      2.55,   6.55],
+        4.35,   2.55,   10,      0.2,   20,     1000,   1,      2.55,   6.55],
         ["does not reach min",
-        5,      0,      6,       0.2,    20,    1000,   1,      2,      6],
+        5,      0,      6,       0.2,   20,     1000,   1,      2,      6],
         ["less pixels than steps",
         500,    0,      1000,   1,      1000,   700,    2,      0,      1000],
         ["even less pixels than steps",
