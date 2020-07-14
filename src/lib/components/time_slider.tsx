@@ -22,6 +22,9 @@ interface Props {
 
 export const TimeSlider: FunctionComponent<Props> = (props) => {
     const tolerance = 1e-12
+    // Material-Ui automatically calculates the step precision, and all the returned values are rounded to that
+    // Add a small delta to work around that
+    const step_precision_force = 1e-16
 
     const [changing, setChanging] = useState(false)
     const [originalValue, setOriginalValue] = useState(props.value)
@@ -57,32 +60,29 @@ export const TimeSlider: FunctionComponent<Props> = (props) => {
         return value - diff*props.step
     }
 
-    const shiftValueToActual = (value: number, step_multiplier: number) => {
+    const shiftRoundedMouseValueToActual = (value: number, step_multiplier: number) => {
         const shift = getMouseStepShift(step_multiplier)
         return value + shift * props.step
     }
 
-    // Material-Ui automatically calculates the step precision, and all the returned values are rounded to that
-    // Add a small delta to work around that
-    const step_precision_force = 1e-16
+    const getNumberOfIntervals = (start: number, end: number) => {
+        const range = end - start
+        const num_intervals = Math.floor(range / props.step)
+        const rest = range - num_intervals * props.step
+        if (rest >= tolerance) {
+            return num_intervals + 1
+        }
+        else {
+            return num_intervals
+        }
+    }
 
     const mid_value = changing ? originalValue : props.value
 
-    const min_range = mid_value - props.min
-    let num_min_intervals = Math.floor(min_range / props.step)
-    let rest = min_range - num_min_intervals * props.step
-    if (rest >= tolerance) {
-        num_min_intervals++
-    }
-
+    const num_min_intervals = getNumberOfIntervals(props.min, mid_value)
     let start = originalValue - num_min_intervals*props.step
 
-    const full_range = props.max - start
-    let num_full_intervals = Math.floor(full_range / props.step)
-    rest = full_range - num_full_intervals * props.step
-    if (rest >= tolerance) {
-        num_full_intervals++;
-    }
+    const num_full_intervals = getNumberOfIntervals(start, props.max)
     let end = start + num_full_intervals * props.step
 
     // Make sure that we don't exceed the maximum allowed steps
@@ -106,15 +106,12 @@ export const TimeSlider: FunctionComponent<Props> = (props) => {
 
     let value = props.value
     let step_multiplier = 1
-    if (ref.current) {
-        const rect = ref.current.getBoundingClientRect()
-        step_multiplier = getMouseStepMultiplier(rect)
-
-    }
+    // Modify the step multiplier when dragging, and there's not enough pixels for full steps
     if (draggingMouse) {
         value = roundValueToMouseStep(props.value, step_multiplier)
+        const rect = ref.current.getBoundingClientRect()
+        step_multiplier = getMouseStepMultiplier(rect)
     }
-
 
     useEffect(()=> {
         if (!changing) {
@@ -122,10 +119,11 @@ export const TimeSlider: FunctionComponent<Props> = (props) => {
             setDraggingMouse(false)
         } else {
             if (!draggingMouse) {
+                // When starting to drag the mouse, we might have to shift the reported value a bit
                 const rect = ref.current.getBoundingClientRect()
                 const step_multiplier = getMouseStepMultiplier(rect)
                 let value = roundValueToMouseStep(props.value, step_multiplier)
-                value = shiftValueToActual(value, step_multiplier)
+                value = shiftRoundedMouseValueToActual(value, step_multiplier)
                 if (Math.abs(value - props.value) > tolerance) {
                     props.onChange(value)
                 }
@@ -143,7 +141,7 @@ export const TimeSlider: FunctionComponent<Props> = (props) => {
             else
             {
                 const step_multiplier = getMouseStepMultiplier(rect)
-                value = shiftValueToActual(value, step_multiplier)
+                value = shiftRoundedMouseValueToActual(value, step_multiplier)
             }
         }
         const allowed_min = Math.max(start, props.min)
@@ -153,6 +151,9 @@ export const TimeSlider: FunctionComponent<Props> = (props) => {
     }
 
     const onChangeCb = function(event: any, new_step: number) {
+        // We use a slightly hacky way to detect if we are using the mouse or not
+        // When using the keyboard commit is called immediately
+        // But if it's not then we assume it's a mouse (or touch drag)
         setChanging(true)
         const actual_value = getActualValue(event, new_step)
         props.onChange(actual_value)
