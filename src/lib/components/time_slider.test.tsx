@@ -4,11 +4,12 @@ import { ThemeProvider, createMuiTheme, Slider } from "@material-ui/core";
 import { createMount } from '@material-ui/core/test-utils';
 import {stub} from "sinon"
 import {act} from "react-dom/test-utils"
-import { assertThat, closeTo, anyOf } from "hamjest"
+import { assertThat, closeTo, anyOf, falsy } from "hamjest"
 
 
 describe("<TimeSlider/>", () => {
     const tolerance = 1e-12
+    const mouse_left = 10
     const closeToTolerance = (value: number) => {
         return closeTo(value, tolerance)
     }
@@ -67,7 +68,7 @@ describe("<TimeSlider/>", () => {
         const slider = wrapper.find(Slider)
         stub(slider.getDOMNode(), "getBoundingClientRect").callsFake(() => {
             const height = 5
-            const left = 0
+            const left = mouse_left
             const top = 0
             return {
                 x: left,
@@ -150,7 +151,13 @@ describe("<TimeSlider/>", () => {
         ["does not reach max",
         4.35,   2.55,   10,      0.2,    20,    1000,   1,      2.55,   6.55],
         ["does not reach min",
-        5,      0,      6,       0.2,    20,    1000,   1,      2,      6]
+        5,      0,      6,       0.2,    20,    1000,   1,      2,      6],
+        ["less pixels than steps",
+        500,    0,      1000,   1,      1000,   700,    2,      0,      1000],
+        ["even less pixels than steps",
+        500,    0,      1000,   1,      1000,   300,    4,      0,      1000],
+        ["value not divisible by mouse multiplier",
+        501,    0,      1000,   1,      1000,   300,    4,      0,      1000],
     ]
     describe.each(tests)("when %s (value: %d, min: %d, max: %d, step: %d, num_steps: %d, num_pixels: %d)",
         (description: string, value: number, min: number, max: number, step: number, num_steps: number, num_pixels: number, mouse_steps: number,
@@ -162,7 +169,7 @@ describe("<TimeSlider/>", () => {
             mouse_step = mouse_steps*step
         })
         const ratio_to_pixel = (ratio: number) => {
-            return Math.round(num_pixels*ratio)
+            return mouse_left + Math.round(num_pixels*ratio)
         }
 
         const value_to_pixel = (value: number) => {
@@ -202,10 +209,9 @@ describe("<TimeSlider/>", () => {
         })
         it("does not change value when clicking in the value position", () => {
             mouseDown(value_to_pixel(value))
-            assertThat(getValue(), closeTo(value, mouse_step+tolerance))
+            assertThat(getValue(), closeTo(value, tolerance))
             mouseUp(value_to_pixel(value))
-            assertThat(getValue(), closeTo(value, mouse_step+tolerance))
-            mouseUp(value_to_pixel(value))
+            assertThat(getValue(), closeTo(value, tolerance))
         })
         it("changes value when clicking", () => {
             // Note we allow the value to vary by one extra mouse step

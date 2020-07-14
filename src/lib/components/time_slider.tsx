@@ -1,4 +1,4 @@
-import React, { useState, useEffect, FunctionComponent } from "react";
+import React, { useState, useEffect, useRef, FunctionComponent } from "react";
 import { Slider, Theme } from "@material-ui/core";
 import { withStyles, createStyles } from "@material-ui/styles";
 
@@ -21,32 +21,47 @@ interface Props {
 }
 
 export const TimeSlider: FunctionComponent<Props> = (props) => {
+    const tolerance = 1e-12
+
     const [changing, setChanging] = useState(false)
     const [originalValue, setOriginalValue] = useState(props.value)
+    const [draggingMouse, setDraggingMouse] = useState(false)
 
-    useEffect(()=> {
+    const ref = useRef<HTMLSpanElement>()
+
+    const getMouseStepMultiplier = (rect: DOMRect) => {
         if (!changing) {
-            setOriginalValue(props.value)
+            return 1
         }
-    }, [changing, props.value])
 
-    const getActualValue = function(value: number) {
-        return Math.min(Math.max(value, props.min), props.max)
+        let multiplier = 1
+        while(rect.width < props.max_steps / multiplier) {
+            multiplier++
+        }
+        return multiplier
     }
 
-    const onChangeCb = function(_:any, new_step: number) {
-        setChanging(true)
-        const actual_value = getActualValue(new_step)
-        props.onChange(actual_value)
+    const getValueSteps = (value: number) => {
+        const range = value - props.min + tolerance
+        return Math.floor(range / props.step)
     }
 
-    const onChangeCommittedCb = function(_:any, new_step: number) {
-        setChanging(false)
-        const actual_value = getActualValue(new_step)
-        setOriginalValue(actual_value)
-        props.onChange(actual_value)
+    const getMouseStepShift = (step_multiplier: number) => {
+        const num_steps = getValueSteps(originalValue)
+        return Math.round(num_steps % step_multiplier)
     }
-    const tolerance = 1e-12
+
+    const roundValueToMouseStep = (value: number, step_multiplier: number) => {
+        const value_steps = getValueSteps(value)
+        const diff = Math.round(value_steps % step_multiplier)
+        return value - diff*props.step
+    }
+
+    const shiftValueToActual = (value: number, step_multiplier: number) => {
+        const shift = getMouseStepShift(step_multiplier)
+        return value + shift * props.step
+    }
+
     // Material-Ui automatically calculates the step precision, and all the returned values are rounded to that
     // Add a small delta to work around that
     const step_precision_force = 1e-16
@@ -89,16 +104,77 @@ export const TimeSlider: FunctionComponent<Props> = (props) => {
         }
     }
 
+    let value = props.value
+    let step_multiplier = 1
+    if (ref.current) {
+        const rect = ref.current.getBoundingClientRect()
+        step_multiplier = getMouseStepMultiplier(rect)
+
+    }
+    if (draggingMouse) {
+        value = roundValueToMouseStep(props.value, step_multiplier)
+    }
+
+
+    useEffect(()=> {
+        if (!changing) {
+            setOriginalValue(props.value)
+            setDraggingMouse(false)
+        } else {
+            if (!draggingMouse) {
+                const rect = ref.current.getBoundingClientRect()
+                const step_multiplier = getMouseStepMultiplier(rect)
+                let value = roundValueToMouseStep(props.value, step_multiplier)
+                value = shiftValueToActual(value, step_multiplier)
+                if (Math.abs(value - props.value) > tolerance) {
+                    props.onChange(value)
+                }
+                setDraggingMouse(true)
+            }
+        }
+    }, [changing, props.value])
+
+    const getActualValue = function(event: any, value: number) {
+        if (draggingMouse) {
+            const rect = ref.current.getBoundingClientRect()
+            if (event instanceof MouseEvent && event.clientX < rect.x) {
+                value = start
+            }
+            else
+            {
+                const step_multiplier = getMouseStepMultiplier(rect)
+                value = shiftValueToActual(value, step_multiplier)
+            }
+        }
+        const allowed_min = Math.max(start, props.min)
+        const allowed_max = Math.min(end, props.max)
+
+        return Math.min(Math.max(value, allowed_min), allowed_max)
+    }
+
+    const onChangeCb = function(event: any, new_step: number) {
+        setChanging(true)
+        const actual_value = getActualValue(event, new_step)
+        props.onChange(actual_value)
+    }
+
+    const onChangeCommittedCb = function(event: any, new_step: number) {
+        setChanging(false)
+        const actual_value = getActualValue(event, new_step)
+        setOriginalValue(actual_value)
+        setDraggingMouse(false)
+        props.onChange(actual_value)
+    }
     return (
         <StyledSlider
+            ref={ref}
             min={start}
             max={end}
-            value={props.value}
-            step={props.step + step_precision_force}
+            value={value}
+            step={props.step * step_multiplier + step_precision_force}
             onChange={onChangeCb}
             onChangeCommitted={onChangeCommittedCb}
             valueLabelDisplay="auto"
-            scale={(x: number) => { return getActualValue(x) }}
         />
     )
 }
