@@ -1,4 +1,4 @@
-import React, {Component} from "react";
+import React, {Component, FunctionComponent, useState, useEffect} from "react";
 import {RelativeSlider} from "./relative_slider"
 import { Grid, Box } from "@material-ui/core";
 import { TimeSlider } from "./time_slider";
@@ -6,73 +6,87 @@ import { TimeSlider } from "./time_slider";
 const margin = 2
 const spacing = 2
 
-type State = {
+interface FullSliderProps {
+    min: number
+    max: number
+    value: number
+    onChange: (time: number) => void
 }
 
-type Props = {
+const FullSlider: FunctionComponent<FullSliderProps> = (props) => {
+    const full_range_steps = 200
+    return (
+        <TimeSlider
+            min={props.min}
+            max={props.max}
+            value={props.value}
+            onChange={props.onChange}
+            step={(props.max-props.min) / full_range_steps}
+            max_steps={1000}
+        />
+    )
+}
+
+interface Props {
     selected_time: Array<number>;
     min_max_time: Array<number>;
     onTimeSelected : (time: Array<number>) => void;
 }
 
-export class RangeSelect extends Component<Props, State>
-{
-    constructor(props: Props) {
-        super(props)
+export const RangeSelect: FunctionComponent<Props> = (props) => {
+
+    const onMinTimeChanged=(time: number)=> {
+        props.onTimeSelected([time, props.selected_time[1]])
     }
 
-    onMinTimeChanged=(time: number)=> {
-        this.props.onTimeSelected([time, this.props.selected_time[1]])
+    const onMaxTimeChanged=(time: number)=> {
+        props.onTimeSelected([props.selected_time[0], time])
     }
 
-    onMaxTimeChanged=(time: number)=> {
-        this.props.onTimeSelected([this.props.selected_time[0], time])
-    }
-
-    onCurrentTimeChanged=(time: number)=> {
-        const span = this.props.selected_time[1] - this.props.selected_time[0]
+    const onCurrentTimeChanged=(time: number)=> {
+        const span = props.selected_time[1] - props.selected_time[0]
         const half_span = span*0.5
         const start = time - half_span
         const end = time + half_span
-        this.props.onTimeSelected([start, end])
+        props.onTimeSelected([start, end])
     }
 
-    render() {
-        const current_time = 0.5 * (this.props.selected_time[0] + this.props.selected_time[1])
-        return (
-            <Box m={margin}>
-                <Grid
-                    container
-                    spacing={spacing}
-                >
-                    <Grid item xs={4}>
-                        <TimeSlider
-                            min={this.props.min_max_time[0]}
-                            max={this.props.selected_time[1]}
-                            value={this.props.selected_time[0]}
-                            onChange={this.onMinTimeChanged}
-                            step={1}
-                            max_steps={1}
-                        />
-                    </Grid>
-                    <Grid item xs={4}>
-                        <RelativeSlider
-                            min={this.props.min_max_time[0]}
-                            max={this.props.min_max_time[1]}
-                            value={current_time}
-                            onChange={this.onCurrentTimeChanged}
-                        />
-                    </Grid>
-                    <Grid item xs={4}>
-                        <RelativeSlider
-                            min={this.props.selected_time[0]}
-                            max={this.props.min_max_time[1]+20}
-                            value={this.props.selected_time[1]}
-                            onChange={this.onMaxTimeChanged}
-                        />
-                    </Grid>
+    const [min_time, max_time] = props.min_max_time
+    const [start, end] = props.selected_time
+    const current_time = 0.5 * (start + end)
+    const range = end - start
+
+    return (
+        <Box m={margin}>
+            <Grid
+                container
+                spacing={spacing}
+            >
+                <Grid item xs={4}>
+                    <FullSlider
+                        min={min_time}
+                        max={end}
+                        value={start}
+                        onChange={onMinTimeChanged}
+                    />
                 </Grid>
-            </Box>
-        )
-    }
+                <Grid item xs={4}>
+                    <FullSlider
+                        min={min_time + range*0.5}
+                        max={max_time - range*0.5}
+                        value={current_time}
+                        onChange={onCurrentTimeChanged}
+                    />
+                </Grid>
+                <Grid item xs={4}>
+                    <FullSlider
+                        min={start}
+                        max={max_time}
+                        value={end}
+                        onChange={onMaxTimeChanged}
+                    />
+                </Grid>
+            </Grid>
+        </Box>
+    )
 }
