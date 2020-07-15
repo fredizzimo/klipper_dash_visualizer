@@ -1,5 +1,6 @@
 const path = require('path');
 const packagejson = require('./package.json');
+const webpack = require("webpack")
 
 const dashLibraryName = packagejson.name.replace(/-/g, '_');
 
@@ -32,7 +33,7 @@ module.exports = (env, argv) => {
 
     const entry = overrides.entry || {main: './src/lib/index.ts'};
 
-    const devtool = overrides.devtool || 'source-map';
+    const devtool = overrides.devtool || 'eval-source-map';
 
     const externals = ('externals' in overrides) ? overrides.externals : ({
         react: 'React',
@@ -83,12 +84,19 @@ module.exports = (env, argv) => {
                 },
                 {
                     test: /\.tsx?$/,
-                    use: 'ts-loader',
+                    use: 
+                    { 
+                        loader:'ts-loader',
+                        options: {
+                            onlyCompileBundledFiles: true,
+                            experimentalFileCaching: true
+                        },
+                    },
                     exclude: [
                         /node_modules/,
                         /dist/,
                         path.resolve(__dirname, dashLibraryName),
-                    ]
+                    ],
                 },
                 {
                     test: /\.(woff(2)?|ttf|eot|svg)(\?v=\d+\.\d+\.\d+)?$/,
@@ -107,5 +115,11 @@ module.exports = (env, argv) => {
         resolve: {
             extensions: [ '.tsx', '.ts', '.js' ],
         },
+         plugins: [
+            new webpack.WatchIgnorePlugin([
+                    /\.js$/,
+                    /\.d\.ts$/
+                ])
+            ],
     }
 };
