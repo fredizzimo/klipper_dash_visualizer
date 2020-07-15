@@ -58,7 +58,7 @@ module.exports = (env, argv) => {
                     exclude: [
                         /node_modules/,
                         /dist/,
-                        /klipper_dash_visualizer/
+                        path.resolve(__dirname, dashLibraryName),
                     ],
                     use: {
                         loader: 'babel-loader',
@@ -87,7 +87,7 @@ module.exports = (env, argv) => {
                     exclude: [
                         /node_modules/,
                         /dist/,
-                        /klipper_dash_visualizer/
+                        path.resolve(__dirname, dashLibraryName),
                     ]
                 },
                 {
