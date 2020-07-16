@@ -1,6 +1,7 @@
 const path = require('path');
 const packagejson = require('./package.json');
 const webpack = require("webpack")
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 
 const dashLibraryName = packagejson.name.replace(/-/g, '_');
 
@@ -89,7 +90,8 @@ module.exports = (env, argv) => {
                         loader:'ts-loader',
                         options: {
                             onlyCompileBundledFiles: true,
-                            experimentalFileCaching: true
+                            experimentalFileCaching: true,
+                            transpileOnly: true
                         },
                     },
                     exclude: [
@@ -119,7 +121,9 @@ module.exports = (env, argv) => {
             new webpack.WatchIgnorePlugin([
                     /\.js$/,
                     /\.d\.ts$/
-                ])
-            ],
+            ]),
+            new ForkTsCheckerWebpackPlugin({
+            }),
+        ],
     }
 };

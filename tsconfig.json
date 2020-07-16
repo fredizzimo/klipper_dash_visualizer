@@ -9,7 +9,10 @@
         "allowSyntheticDefaultImports": true,
         "moduleResolution": "node",
         "resolveJsonModule": true,
-        "sourceMap": true
+        "sourceMap": true,
+        "skipLibCheck": true,
+        "incremental": true,
+        "importsNotUsedAsValues": "preserve"
     },
     "exclude": [
         "**/node_modules/*",
