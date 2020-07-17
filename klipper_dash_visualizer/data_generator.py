@@ -164,6 +164,39 @@ def generate_speed_colors(velocities):
     speed_colors = interpolate(turbo_color_map, velocity_multipliers)
     return speed_colors
 
+def generate_intervals(interval, times):
+    start = times[0]
+    end = times[-1]
+    r = end - start
+    num = round(r / interval)
+    new_end = start + interval * num
+
+    if new_end < end:
+        new_end += interval
+        num += 1
+
+    return np.linspace(start, new_end, num + 1, True)
+
+
+def sample(interval, times, positions, velocities, accelerations):
+    input_length = times.shape[0]
+    intervals = generate_intervals(interval, times)
+    output_length = intervals.shape[0]
+    output_positions = np.empty(intervals.shape[0])
+    input_indices = np.empty(output_length, dtype=np.int32)
+    j = 0
+    for i in xrange(output_length):
+        time = intervals[i]
+        while j < (input_length - 1) and times[j] < time:
+            j += 1
+        input_indices[i] = j
+
+    dt = times[input_indices] - intervals
+    x = positions[input_indices]
+    v = velocities[input_indices]
+    a = accelerations[input_indices]
+    output_positions = x + dt*(v + 0.5*a*dt)
+    return intervals, output_positions
 
 class Stepper(object):
     def __init__(self, name):
@@ -191,7 +224,7 @@ class DataGenerator(object):
         self.velocities, self.accelerations = self.generate_velocities_and_accelerations()
         self.culled_coordinates = self.cull_spatial_coordinates()
         self.speed_colors = generate_speed_colors(self.velocities)
-        pass
+
 
     def generate_spatial_coordinates(self, parser):
         spatial_steppers = parser.get_spatial_steppers()
