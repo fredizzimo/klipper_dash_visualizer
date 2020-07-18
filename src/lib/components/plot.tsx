@@ -25,98 +25,88 @@ export type PlotDef = {
 interface Props extends WithStyles<typeof styles>{
 }
 
-// a random number generator
-const generator = fc.randomGeometricBrownianMotion()
-  .steps(11);
 
-// some formatters
-const dateFormatter = d3.timeFormat('%b');
-const valueFormatter = d3.format('$.0f');
+class D3FCPlot
+{
+    data = fc.randomGeometricBrownianMotion().steps(1e4)(1);
 
-const yExtent = fc.extentLinear()
-    .include([0])
-    .pad([0, 0.5])
-    .accessors([(d: any) => d.sales]);
+    extent = fc.extentLinear();
 
-const data = {
-    // target values for the annotations
-    targets: [{
-        name: 'low',
-        value: 4.5
-    }, {
-        name: 'high',
-        value: 7.2
-    }],
-    // randomly generated sales data
-    sales: generator(1).map((d: any, i: number) => ({
-        month: dateFormatter(new Date(0, i + 1, 0)),
-        sales: d + i / 2
-    }))
-};
+    xScale = d3.scaleLinear().domain([0, this.data.length - 1]);
 
-const bar = fc.autoBandwidth(fc.seriesSvgBar())
-    .crossValue((d: any) => d.month)
-    .mainValue((d: any) => d.sales)
-    .align('left');
+    yScale = d3.scaleLinear().domain(this.extent(this.data));
 
-const chart = fc.chartCartesian(
-    d3.scaleBand(),
-    d3.scaleLinear()
-)
-    .chartLabel('2015 Cumulative Sales')
-    .xDomain(data.sales.map((d: any)=> d.month))
-    .yDomain(yExtent(data.sales))
-    .xPadding(0.2)
-    .yTicks(5)
-    .yTickFormat(valueFormatter)
-    .yLabel('Sales (millions)')
-    .yNice();
+    series = fc
+        .seriesWebglLine()
+        .xScale(this.xScale)
+        .yScale(this.yScale)
+        .crossValue((_: any, i: number) => i)
+        .mainValue((d: number) => d)
+        .defined(() => true)
+        .equals((previousData: Array<number>) => previousData.length > 0);
 
-const annotation = fc.annotationSvgLine()
-  .value((d: any) => d.value);
+    pixels: any = null;
+    frame = 0;
+    gl: any = null;
 
-const multi = fc.seriesSvgMulti()
-    .series([bar, annotation])
-    .mapping((data: any, index: any, series: Array<any>) => {
-        switch (series[index]) {
-            case bar:
-                return data.sales;
-            case annotation:
-                return data.targets;
-        }
-    });
+    constructor(container: any) {
+        d3.select(container)
+            .on('click', () => {
+                const domain = this.xScale.domain();
+                const max = Math.round(domain[1] / 2);
+                this.xScale.domain([0, max]);
+                container.requestRedraw();
+            })
+            .on('measure', () => {
+                const { width, height } = d3.event.detail;
+                this.xScale.range([0, width]);
+                this.yScale.range([height, 0]);
 
-chart.svgPlotArea(multi);
+                this.gl = container.querySelector('canvas').getContext('webgl');
+                this.series.context(this.gl);
+            })
+            .on('draw', () => {
+                if (this.pixels == null) {
+                    this.pixels = new Uint8Array(
+                        this.gl.drawingBufferWidth * this.gl.drawingBufferHeight * 4
+                    );
+                }
+                performance.mark(`draw-start-${this.frame}`);
+                this.series(this.data);
+                // Force GPU to complete rendering to allow accurate performance measurements to be taken
+                this.gl.readPixels(
+                    0,
+                    0,
+                    this.gl.drawingBufferWidth,
+                    this.gl.drawingBufferHeight,
+                    this.gl.RGBA,
+                    this.gl.UNSIGNED_BYTE,
+                    this.pixels
+                );
+                performance.measure(`draw-duration-${this.frame}`, `draw-start-${this.frame}`);
+                this.frame++;
+            });
 
- bar.decorate((selection: any) => {
-    // The selection passed to decorate is the one which the component creates
-    // within its internal data join, here we use the update selection to
-    // apply a style to 'path' elements created by the bar series
-    selection.select('.bar > path')
-        .style('fill', (d: any) => d.sales < data.targets[0].value ? 'inherit' : '#0c0');
-});
-
-annotation.decorate((selection: any) => {
-    selection.enter()
-        .select('g.left-handle')
-        .append('text')
-        .attr('x', 5)
-        .attr('y', -5);
-    selection.select('g.left-handle text')
-        .text((d: any) => d.name + ' - ' + valueFormatter(d.value) + 'M');
-});
+        container.requestRedraw();
+    }
+}
 
 const _Plot: FunctionComponent<Props> = (props) => {
     const ref = useRef()
+    const fcref = useRef<D3FCPlot>()
     useEffect(() => {
-        d3.select(ref.current)
-            .datum(data)
-            .call(chart);
+        if (!fcref.current) {
+            fcref.current = new D3FCPlot(ref.current)
+        }
     })
-    return <div 
-        className={props.classes.graph}
-        ref={ref}
-    />
+    return (
+        <d3fc-canvas
+            use-device-pixel-ratio
+            set-webgl-viewport
+            class={props.classes.graph}
+            ref={ref}
+        />
+    ) 
 }
 
 export const Plot = withStyles(styles)(_Plot)
