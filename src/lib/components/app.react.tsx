@@ -1,10 +1,10 @@
 import React, {Component} from "react";
 import KlipperDashRenderer from './klipper_dash_renderer.react';
-import MainPlot, { PlotDef } from "./main_plot"
 import {get_min_max} from "../helpers"
 import { Tab, Tabs, AppBar, Box, Theme, createStyles, WithStyles, withStyles, ThemeProvider, createMuiTheme } from "@material-ui/core";
 import { TabPanel } from "./tabs.react"
 import { RangeSelect } from "./range_select"
+import { Plot, PlotDef } from "./plot"
 
 const styles = (theme: Theme) => createStyles({
     "@global": {
@@ -17,7 +17,6 @@ const styles = (theme: Theme) => createStyles({
         display: "flex",
         flexDirection: "column",
         minHeight: "100vh",
-        backgroundColor: "red"
     },
     tab_panel: {
         flex: 1,
@@ -107,11 +106,7 @@ const App = withStyles(styles)(
                             index={this.state.activeTab}
                             value="graphs"
                         >
-                            <MainPlot
-                                selected_time={this.state.selected_time}
-                                onTimeSelected={this.onTimeSelected}
-                                plots={this.props.plots}
-                            />
+                            <Plot></Plot>
                         </TabPanel>
                         <TabPanel
                             className={this.props.classes.tab_panel}
