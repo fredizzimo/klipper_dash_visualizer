@@ -1,4 +1,5 @@
 def get_plot_data(data):
+    data = data.sample(0.06)
     plots = [
         {
             "name": stepper.name,

@@ -164,39 +164,83 @@ def generate_speed_colors(velocities):
     speed_colors = interpolate(turbo_color_map, velocity_multipliers)
     return speed_colors
 
-def generate_intervals(interval, times):
-    start = times[0]
-    end = times[-1]
-    r = end - start
-    num = round(r / interval)
-    new_end = start + interval * num
-
-    if new_end < end:
-        new_end += interval
-        num += 1
-
-    return np.linspace(start, new_end, num + 1, True)
-
-
-def sample(interval, times, positions, velocities, accelerations):
+def sample(interval, times, positions):
     input_length = times.shape[0]
-    intervals = generate_intervals(interval, times)
-    output_length = intervals.shape[0]
-    output_positions = np.empty(intervals.shape[0])
-    input_indices = np.empty(output_length, dtype=np.int32)
-    j = 0
-    for i in xrange(output_length):
-        time = intervals[i]
-        while j < (input_length - 1) and times[j] < time:
-            j += 1
-        input_indices[i] = j
+    if input_length <= 2:
+        return times.copy(), positions.copy()
+    start_time = times[0]
 
-    dt = times[input_indices] - intervals
-    x = positions[input_indices]
-    v = velocities[input_indices]
-    a = accelerations[input_indices]
-    output_positions = x + dt*(v + 0.5*a*dt)
-    return intervals, output_positions
+    def get_max_output_length():
+        start = times[0]
+        end = times[-1]
+        r = end - start
+        num = int(r / interval)
+        new_end = start + interval * num
+
+        if new_end < end:
+            num += 1
+        return num
+
+    def find_interval_end(start_idx):
+        idx = start_idx
+        interval_nr = int((times[idx] - start_time) / interval)
+        next_interval_time = (interval_nr + 1) * interval
+        while idx < input_length and times[idx] < next_interval_time:
+            idx += 1
+        return idx
+
+    def calculate_triangle_areas(prev_pos, prev_time, positions, times, next_pos, next_time):
+        a = prev_time - next_time
+        b = positions - prev_pos 
+        c = prev_time - times
+        d = next_pos - prev_pos
+        return 0.5 * np.abs(a*b - c*d)
+
+    output_length = get_max_output_length()
+    output_positions = np.empty(output_length)
+    output_times = np.empty(output_length)
+
+    prev_pos = positions[0]
+    prev_time = times[0]
+
+    output_positions[0] = prev_pos
+    output_times[0] = prev_time
+    output_index = 1
+
+    prev_end_idx = find_interval_end(0) 
+    cur_start_idx = prev_end_idx + 1
+    cur_end_idx = find_interval_end(cur_start_idx)
+    next_start_idx = cur_end_idx + 1
+    next_end_idx = find_interval_end(next_start_idx)
+    while next_end_idx < input_length:
+        next_pos = np.mean(positions[next_start_idx:next_end_idx+1])
+        next_time = np.mean(times[next_start_idx:next_end_idx+1])
+        areas = calculate_triangle_areas(
+            prev_pos,
+            prev_time,
+            positions[cur_start_idx:cur_end_idx+1],
+            times[cur_start_idx:cur_end_idx+1],
+            next_pos,
+            next_time
+        )
+        cur_idx = np.argmax(areas) + cur_start_idx
+        prev_pos = positions[cur_idx]
+        prev_time = times[cur_idx]
+        output_positions[output_index] = prev_pos
+        output_times[output_index] = prev_time
+        output_index += 1
+
+        prev_end_idx = cur_end_idx
+        cur_start_idx = next_start_idx
+        cur_end_idx = next_end_idx
+        next_start_idx = cur_end_idx + 1
+        next_end_idx = find_interval_end(next_start_idx)
+
+    output_positions[output_index] = positions[-1]
+    output_times[output_index] = times[-1]
+
+    return output_times[:output_index+1].copy(), output_positions[:output_index+1].copy()
+
 
 class Stepper(object):
     def __init__(self, name):
@@ -209,10 +253,31 @@ class Stepper(object):
     def calculate_velocities_and_accelerations(self):
         self.velocity, self.acceleration = calculate_velocities_and_accelerations(self.time, self.position)
 
-class DataGenerator(object):
+class Data(object):
+    def __init__(self, stepper_names):
+        self.steppers = [Stepper(name) for name in stepper_names]
+        self.times = None
+        self.spatial_coordinates = None
+        self.distances = None
+        self.velocities = None
+        self.accelerations = None
+
+    def generate_distances(self):
+        distances = np.diff(self.spatial_coordinates, axis=0, prepend=0.0)
+        distances = np.linalg.norm(distances, axis=1)
+        distances = np.cumsum(distances)
+        self.distances = distances
+
+    def generate_velocities_and_accelerations(self):
+        velocities, accelerations = calculate_velocities_and_accelerations(self.times, self.distances)
+        self.velocities = velocities
+        self.accelerations = accelerations
+
+
+class DataGenerator(Data):
     def __init__(self, parser):
+        super(DataGenerator, self).__init__(parser.get_stepper_names())
         self.parser = parser
-        self.steppers = [Stepper(name) for name in parser.get_stepper_names()]
 
         for i, stepper in enumerate(self.steppers):
             steps = np.array(list(parser.get_steps(i, 0)))
@@ -221,10 +286,19 @@ class DataGenerator(object):
             stepper.calculate_velocities_and_accelerations()
 
         self.times, self.spatial_coordinates = self.generate_spatial_coordinates(parser)
-        self.velocities, self.accelerations = self.generate_velocities_and_accelerations()
+        self.generate_distances()
+        self.generate_velocities_and_accelerations()
         self.culled_coordinates = self.cull_spatial_coordinates()
         self.speed_colors = generate_speed_colors(self.velocities)
 
+    def sample(self, interval):
+        ret = Data(self.parser.get_stepper_names())
+        for ret_stepper, stepper in zip(ret.steppers, self.steppers):
+            ret_stepper.time, ret_stepper.position = sample(interval, stepper.time, stepper.position) 
+            ret_stepper.calculate_velocities_and_accelerations()
+        ret.distances, ret.times = sample(interval, self.times, self.distances)
+        ret.generate_velocities_and_accelerations()
+        return ret
 
     def generate_spatial_coordinates(self, parser):
         spatial_steppers = parser.get_spatial_steppers()
@@ -241,13 +315,6 @@ class DataGenerator(object):
             return (times, spatial_coordinates)
         else:
             return ([], [])
-
-    def generate_velocities_and_accelerations(self):
-        distances = np.diff(self.spatial_coordinates, axis=0, prepend=0.0)
-        distances = np.linalg.norm(distances, axis=1)
-        distances = np.cumsum(distances)
-        velocities, accelerations = calculate_velocities_and_accelerations(self.times, distances)
-        return velocities, accelerations
 
     def cull_spatial_coordinates(self):
         return rdp(self.times, self.spatial_coordinates, 0.01)
