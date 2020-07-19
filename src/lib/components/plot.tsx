@@ -57,7 +57,7 @@ class D3FCPlot
         this.container = container
         this.plot = props.plot
         this.xScale.domain(props.selected_time)
-        this.yScale.domain([0, 200])
+        this.zoomTraceY(0)
 
         d3.select(container)
             .on('click', () => {
