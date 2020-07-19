@@ -17,6 +17,7 @@ const styles = (theme: Theme) => createStyles({
         display: "flex",
         flexDirection: "column",
         minHeight: "100vh",
+        overflowX: "hidden"
     },
     tab_panel: {
         flex: 1,
@@ -24,7 +25,7 @@ const styles = (theme: Theme) => createStyles({
         flexDirection: "column",
         "&[hidden]": {
             display: "none"
-        }
+        },
     },
 });
 
