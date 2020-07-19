@@ -106,7 +106,10 @@ const App = withStyles(styles)(
                             index={this.state.activeTab}
                             value="graphs"
                         >
-                            <Plot></Plot>
+                            <Plot 
+                                plot={this.props.plots[0]}
+                                selected_time={this.state.selected_time}
+                            />
                         </TabPanel>
                         <TabPanel
                             className={this.props.classes.tab_panel}
