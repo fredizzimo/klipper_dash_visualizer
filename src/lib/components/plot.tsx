@@ -6,11 +6,38 @@ import { WithStyles, withStyles } from "@material-ui/styles";
 import * as ld from "lodash"
 import {range_start, range_end, get_min_max} from "../helpers"
 
+const axis_font_size = 10
+const axis_tick_size = 6
+const axis_tick_padding = 3
+const plot_height = 500
+
+const axis_height = axis_font_size + axis_tick_size + axis_tick_padding
 
 const styles = (theme: Theme) => createStyles({
-    graph: {
-        height: "500px"
+    container: {
+        display: "flex",
+        width: "100%"
     },
+    main_and_x_axis: {
+        flexGrow: 1
+    },
+    graph: {
+        height: plot_height,
+    },
+    xaxis: {
+        height: axis_height,
+        width: "100%",
+        "& svg": {
+            fontSize: axis_font_size
+        }
+    },
+    yaxis: {
+        height: plot_height,
+        width: 100,
+        "& svg": {
+            fontSize: axis_font_size
+        }
+    }
 });
 
 type Trace = {
@@ -46,6 +73,16 @@ class D3FCPlot
         .mainValue((d: number) => d)
         .defined(() => true)
         .equals((previousData: Array<number>) => previousData.length > 0);
+    
+    xAxis = fc.axisBottom(this.xScale)
+        .ticks(10)
+        .tickSize(axis_tick_size)
+        .tickPadding(axis_tick_padding)
+
+    yAxis = fc.axisLeft(this.yScale)
+        .ticks(10)
+        .tickSize(axis_tick_size)
+        .tickPadding(axis_tick_padding)
 
     pixels: any = null;
     frame = 0;
@@ -53,7 +90,7 @@ class D3FCPlot
     plot: PlotDef = null;
     container: any = null;
 
-    constructor(container: any, props: Props) {
+    constructor(container: any, x_axis_svg: any, y_axis_svg: any, props: Props) {
         this.container = container
         this.plot = props.plot
         this.xScale.domain(props.selected_time)
@@ -82,6 +119,9 @@ class D3FCPlot
                 }
                 performance.mark(`draw-start-${this.frame}`);
                 this.series(this.plot.traces[0].data);
+                d3.select(x_axis_svg).select("svg").call(this.xAxis)
+                d3.select(y_axis_svg).select("svg").call(this.yAxis)
+
                 // Force GPU to complete rendering to allow accurate performance measurements to be taken
                 this.gl.readPixels(
                     0,
@@ -144,22 +184,40 @@ class D3FCPlot
 }
 
 const _Plot: FunctionComponent<Props> = (props) => {
-    const ref = useRef()
+    const main_canvas = useRef()
+    const x_axis = useRef()
+    const y_axis = useRef()
     const fcref = useRef<D3FCPlot>()
     useEffect(() => {
         if (!fcref.current) {
-            fcref.current = new D3FCPlot(ref.current, props)
+            fcref.current = new D3FCPlot(main_canvas.current, x_axis.current, y_axis.current, props)
         } else {
             fcref.current.update(props)
         }
     })
     return (
-        <d3fc-canvas
-            use-device-pixel-ratio
-            set-webgl-viewport
-            class={props.classes.graph}
-            ref={ref}
-        />
+        <div>
+            <div className={props.classes.container}>
+                <d3fc-svg
+                    use-device-pixel-ratio
+                    class={props.classes.yaxis}
+                    ref={y_axis}
+                />
+                <div className={props.classes.main_and_x_axis}>
+                    <d3fc-canvas
+                        use-device-pixel-ratio
+                        set-webgl-viewport
+                        class={props.classes.graph}
+                        ref={main_canvas}
+                    />
+                    <d3fc-svg
+                        use-device-pixel-ratio
+                        class={props.classes.xaxis}
+                        ref={x_axis}
+                    />
+                </div>
+            </div>
+        </div>
     ) 
 }
 
