@@ -20,5 +20,20 @@ describe("linearFixedTicksScale", () => {
         assertThat(ticks.length, equalTo(3))
         assertThat(ticks, equalTo([1, 2, 3]))
     })
-
+    test("a 10 step range with integer steps", () => {
+        const ret = scaleLinearFixedTicks().domain([1, 10]).ticks(10)
+        assertThat(ret, equalTo([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+    })
+    test("a 3 step range with integer steps", () => {
+        const ret = scaleLinearFixedTicks().domain([1, 3]).ticks(3)
+        assertThat(ret, equalTo([1, 2, 3]))
+    })
+    test("a range starting from 2", () => {
+        const ret = scaleLinearFixedTicks().domain([2, 5]).ticks(4)
+        assertThat(ret, equalTo([2, 3, 4, 5]))
+    })
+    it("divide 0 to 1 into five steps should match exactly", () => {
+        const ret = scaleLinearFixedTicks().domain([0, 1]).ticks(5)
+        assertThat(ret, equalTo([0, 0.25, 0.5, 0.75, 1.0]))
+    })
 })

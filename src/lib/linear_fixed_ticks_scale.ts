@@ -1,4 +1,4 @@
-import { scaleLinear, ScaleLinear } from "d3";
+import { scaleLinear, ScaleLinear, range as d3_range } from "d3";
 
 interface ScaleLinearFixedTicks extends ScaleLinear<number, number> {
     niceValues(values: number[]) : this
@@ -12,11 +12,10 @@ export function scaleLinearFixedTicks() : ScaleLinearFixedTicks {
         if (count == undefined) {
             count = 10
         }
-        var ret = []
-        for (let i=1;i<=count;++i) {
-            ret.push(i)
-        }
-        return ret
+        const domain = linear_scale.domain()
+        const range = domain[1] - domain[0]
+        const step = range / (count - 1)
+        return d3_range(domain[0], domain[1] + step/2, step)
     }
     linear_scale.niceValues = (values?: number[]): any => {
         if (values == undefined) {
