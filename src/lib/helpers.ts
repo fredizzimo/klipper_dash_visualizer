@@ -43,9 +43,9 @@ export function range_end(array: ArrayLike<number>, value: number)
 }
 
 export function get_min_max(array: ArrayLike<number>, start: number, end: number) {
-    var min = array[0];
-    var max = array[0] 
-    for (let i=start;i<end;i++) {
+    var min = array[start];
+    var max = array[start] 
+    for (let i=start+1;i<end;i++) {
         let v = array[i]
         if (v < min) {
             min = v;
