@@ -11,6 +11,8 @@ const axis_font_size = 10
 const axis_tick_size = 6
 const axis_tick_padding = 3
 const plot_height = 500
+const y_axis_ticks = 10
+const x_axis_ticks = 10
 
 const axis_height = axis_font_size + axis_tick_size + axis_tick_padding
 const yaxis_width = 100
@@ -80,12 +82,12 @@ class D3FCPlot
         .equals((previousData: Array<number>) => previousData.length > 0);
     
     xAxis = fc.axisBottom(this.xScale)
-        .ticks(10)
+        .ticks(x_axis_ticks)
         .tickSize(axis_tick_size)
         .tickPadding(axis_tick_padding)
 
     yAxis = fc.axisLeft(this.yScale)
-        .ticks(10)
+        .ticks(y_axis_ticks)
         .tickSize(axis_tick_size)
         .tickPadding(axis_tick_padding)
 
@@ -168,7 +170,8 @@ class D3FCPlot
         const times = this.plot.times
 
         const range = this.getTraceYRange(times, data, time[0], time[1])
-        this.yScale.domain(range)
+        // Also call ticks here, so that the actual used domain is set
+        this.yScale.domain(range).ticks(y_axis_ticks)
     }
 
 
