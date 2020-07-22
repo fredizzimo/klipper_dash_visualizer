@@ -5,6 +5,7 @@ import { Theme, makeStyles } from "@material-ui/core";
 import { WithStyles, withStyles, useTheme } from "@material-ui/styles";
 import * as ld from "lodash"
 import {range_start, range_end, get_min_max} from "../helpers"
+import {scaleLinearFixedTicks} from "../linear_fixed_ticks_scale"
 
 const axis_font_size = 10
 const axis_tick_size = 6
@@ -65,7 +66,9 @@ class D3FCPlot
 
     xScale = d3.scaleLinear()
 
-    yScale = d3.scaleLinear()
+    yScale = scaleLinearFixedTicks().niceValues(
+        [0.1, 0.12, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 0.9]
+    )
 
     series = fc
         .seriesWebglLine()
@@ -170,8 +173,10 @@ class D3FCPlot
 
 
     getTraceYRange = (xvals: ArrayLike<number>, yvals: ArrayLike<number>, start: number, end: number) => {
+        const min_diff = 1e-12
+
         if (xvals.length == 0) {
-            return [-100, 100];
+            return [-min_diff, min_diff];
         }
         var i_low = range_start(xvals, start);
         var i_high = range_end(xvals, end);
@@ -188,9 +193,9 @@ class D3FCPlot
             var range_high = min_max[1]
         }
         var diff = range_high - range_low;
-        var margin = diff * 0.1;
-        range_high += margin;
-        range_low -= margin;
+        if (diff < min_diff) {
+            range_high += min_diff
+        }
         return [range_low, range_high];
     }
 }
