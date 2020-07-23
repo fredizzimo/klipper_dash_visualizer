@@ -1,6 +1,6 @@
 import { scaleLinear, ScaleLinear } from "d3";
 
-interface ScaleLinearFixedTicks extends ScaleLinear<number, number> {
+export interface ScaleLinearFixedTicks extends ScaleLinear<number, number> {
     niceValues(values: number[]) : this
     niceValues() : number[]
 }
