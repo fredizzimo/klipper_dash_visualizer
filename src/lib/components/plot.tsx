@@ -1,4 +1,4 @@
-import React, { FunctionComponent, useEffect, useRef } from "react";
+import React, { FunctionComponent, useEffect, useRef, useState, useCallback } from "react";
 import * as fc from "d3fc"
 import * as d3 from "d3" 
 import { Theme, makeStyles } from "@material-ui/core";
@@ -53,9 +53,13 @@ const useStyles = makeStyles((theme: Theme) => ({
     },
     yaxis: {
         gridArea: "yaxis",
-        "& svg": {
-            fontSize: axis_font_size
-        }
+        fontSize: axis_font_size,
+        width: "100%",
+        height: "100%",
+        overflow: "visible"
+    },
+    yaxis_line: {
+        stroke: "black",
     }
 }));
 
@@ -75,9 +79,7 @@ interface Props {
     selected_time: Array<number>
 }
 
-
-class D3FCPlot
-{
+class PlotImpl {
     extent = fc.extentLinear();
 
     xScale = d3.scaleLinear()
@@ -90,193 +92,157 @@ class D3FCPlot
     series: any[]
     y_scales: ScaleLinearFixedTicks[]
     y_axis: any
-    pixels: any = null;
-    frame = 0;
-    gl: any = null;
-    plot: PlotDef = null;
     container: any = null;
 
-    constructor(container: any, x_axis_svg: any, y_axis_svg: any, props: Props) {
-        this.container = container
-        this.plot = props.plot
-        this.xScale.domain(props.selected_time)
-        this.createSeriesAndScales()
-        this.zoomTraces()
+    render = (props: Props) => {
+        const x_axis = useRef<any>()
 
-        d3.select(container)
-            .on('click', () => {
-                const domain = this.xScale.domain();
-                const max = Math.round(domain[1] / 2);
-                this.xScale.domain([0, max]);
-                container.requestRedraw();
-            })
-            .on('measure', () => {
-                const { width, height, pixelRatio} = d3.event.detail;
-                this.xScale.range([0, width / pixelRatio ]);
-                for (let i=0;i<this.y_scales.length;i++) {
-                    this.y_scales[i].range([height / pixelRatio, 0]);
-                }
+        const main_canvas = useCallback((container: any) => {
+            this.container = container
+            d3.select(container)
+                .on('measure', () => {
+                    container.querySelector("canvas")
+                    const { width, height, pixelRatio} = d3.event.detail;
+                    this.xScale.range([0, width / pixelRatio ]);
+                    for (let i=0;i<this.y_scales.length;i++) {
+                        this.y_scales[i].range([height / pixelRatio, 0]);
+                    }
 
-                this.gl = container.querySelector('canvas').getContext('webgl');
-                for (let i=0;i<this.series.length;i++) {
-                    this.series[i].context(this.gl);
-                }
-            })
-            .on('draw', () => {
-                if (this.pixels == null) {
-                    this.pixels = new Uint8Array(
-                        this.gl.drawingBufferWidth * this.gl.drawingBufferHeight * 4
-                    );
-                }
-                performance.mark(`draw-start-${this.frame}`);
-                for (let i=0;i<this.series.length;i++) {
-                    this.series[i](this.plot.traces[i].data);
-                }
-                d3.select(x_axis_svg)
-                    .select("svg")
-                    .call(this.xAxis)
-                
-                
-                d3.select(y_axis_svg).select(".axis").remove()
-                d3.select(y_axis_svg)
-                    .select("svg")
-                    .append("g")
-                    .attr("class", "axis")
-                    .attr("transform", `translate(${yaxis_width},0)`)
-                    .call(this.y_axis)
-
-                // Force GPU to complete rendering to allow accurate performance measurements to be taken
-                this.gl.readPixels(
-                    0,
-                    0,
-                    this.gl.drawingBufferWidth,
-                    this.gl.drawingBufferHeight,
-                    this.gl.RGBA,
-                    this.gl.UNSIGNED_BYTE,
-                    this.pixels
-                );
-                performance.measure(`draw-duration-${this.frame}`, `draw-start-${this.frame}`);
-                this.frame++;
-            });
-
-        container.requestRedraw();
-    }
-
-    createSeriesAndScales = () => {
-        const traces = this.plot.traces
-        this.series = new Array(traces.length)
-        this.y_scales = new Array<ScaleLinearFixedTicks>(traces.length)
-        for(let i=0;i<traces.length;i++) {
-            const y_scale = scaleLinearFixedTicks().niceValues(
-                [0.1, 0.12, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 0.9]
-            )
-
-            const series = fc
-                .seriesWebglLine()
-                .xScale(this.xScale)
-                .yScale(y_scale)
-                .crossValue((_: any, i: number) => this.plot.times[i])
-                .mainValue((d: number) => d)
-                .defined(() => true)
-                .equals((previousData: Array<number>) => previousData.length > 0)
-                .decorate((program: any) => {
-                    const {r, g, b, opacity} = trace_colors[i].rgb()
-                    fc.webglStrokeColor([r / 255, g / 255, b / 255, opacity])(program)
+                    const gl = container.querySelector('canvas').getContext('webgl');
+                    for (let i=0;i<this.series.length;i++) {
+                        this.series[i].context(gl);
+                    }
                 })
+                .on('draw', () => {
+                    for (let i=0;i<this.series.length;i++) {
+                        this.series[i](props.plot.traces[i].data);
+                    }
+                    d3.select(x_axis.current)
+                        .select("svg")
+                        .call(this.xAxis)
+                });
+        }, [])
 
-            this.y_scales[i] = y_scale
-            this.series[i] = series
+        const initialize_plot = () => {
+            props.plot = props.plot
+            const traces = props.plot.traces
+            this.series = new Array(traces.length)
+            this.y_scales = new Array<ScaleLinearFixedTicks>(traces.length)
+            for(let i=0;i<traces.length;i++) {
+                const y_scale = scaleLinearFixedTicks().niceValues(
+                    [0.1, 0.12, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 0.9]
+                )
+
+                const series = fc
+                    .seriesWebglLine()
+                    .xScale(this.xScale)
+                    .yScale(y_scale)
+                    .crossValue((_: any, i: number) => props.plot.times[i])
+                    .mainValue((d: number) => d)
+                    .defined(() => true)
+                    .equals((previousData: Array<number>) => previousData.length > 0)
+                    .decorate((program: any) => {
+                        const {r, g, b, opacity} = trace_colors[i].rgb()
+                        fc.webglStrokeColor([r / 255, g / 255, b / 255, opacity])(program)
+                    })
+
+                this.y_scales[i] = y_scale
+                this.series[i] = series
+            }
+            this.y_axis = fc.axisLeft(this.y_scales[0])
+                .ticks(y_axis_ticks)
+                .tickSize(axis_tick_size)
+                .tickPadding(axis_tick_padding)
         }
-        this.y_axis = fc.axisLeft(this.y_scales[0])
-            .ticks(y_axis_ticks)
-            .tickSize(axis_tick_size)
-            .tickPadding(axis_tick_padding)
-    }
 
-    update = (props: Props) => {
-        if (!ld.isEqual(this.xScale.domain(), props.selected_time)) {
+        const updateSelectedTime = () => {
             this.xScale.domain(props.selected_time)
-            this.zoomTraces()
+            zoomTraces()
             this.container.requestRedraw()
-        } 
-    }
-
-    zoomTraces = () => {
-        for (let i=0;i<this.plot.traces.length;i++) {
-            this.zoomTrace(i)
         }
-    }
 
-    zoomTrace  = (trace: number) => {
-        const data = this.plot.traces[trace].data
-        const time = this.xScale.domain()
-        const times = this.plot.times
-
-        const range = this.getTraceYRange(times, data, time[0], time[1])
-        // Also call ticks here, so that the actual used domain is set
-        this.y_scales[trace].domain(range).ticks(y_axis_ticks)
-    }
-
-
-    getTraceYRange = (xvals: ArrayLike<number>, yvals: ArrayLike<number>, start: number, end: number) => {
-        const min_diff = 1e-12
-
-        if (xvals.length == 0) {
-            return [-min_diff, min_diff];
+        const zoomTraces = () => {
+            const time = this.xScale.domain()
+            const times = props.plot.times
+            for (let trace=0;trace<props.plot.traces.length;trace++) {
+                const data = props.plot.traces[trace].data
+                const range = getTraceYRange(times, data, time[0], time[1])
+                // Also call ticks here, so that the actual used domain is set
+                this.y_scales[trace].domain(range).ticks(y_axis_ticks)
+            }
         }
-        var i_low = range_start(xvals, start);
-        var i_high = range_end(xvals, end);
-        var num_steps = xvals.length;
-        if (i_low >= num_steps) {
-            var range_low = yvals[yvals.length - 1];
-            var range_high = range_low;
-        } else if (i_low == i_high) {
-            var range_low = yvals[i_low];
-            var range_high = range_low;
-        } else {
-            let min_max = get_min_max(yvals, i_low, i_high+1);
-            var range_low = min_max[0];
-            var range_high = min_max[1]
+
+        const getTraceYRange = (xvals: ArrayLike<number>, yvals: ArrayLike<number>, start: number, end: number) => {
+            const min_diff = 1e-12
+
+            if (xvals.length == 0) {
+                return [-min_diff, min_diff];
+            }
+            var i_low = range_start(xvals, start);
+            var i_high = range_end(xvals, end);
+            var num_steps = xvals.length;
+            if (i_low >= num_steps) {
+                var range_low = yvals[yvals.length - 1];
+                var range_high = range_low;
+            } else if (i_low == i_high) {
+                var range_low = yvals[i_low];
+                var range_high = range_low;
+            } else {
+                let min_max = get_min_max(yvals, i_low, i_high+1);
+                var range_low = min_max[0];
+                var range_high = min_max[1]
+            }
+            var diff = range_high - range_low;
+            if (diff < min_diff) {
+                range_high += min_diff
+            }
+            return [range_low, range_high];
         }
-        var diff = range_high - range_low;
-        if (diff < min_diff) {
-            range_high += min_diff
-        }
-        return [range_low, range_high];
+
+        useEffect(() => {
+            initialize_plot()
+        }, [props.plot])
+
+
+        useEffect(() => {
+            updateSelectedTime()
+        }, [props.selected_time, props.plot])
+
+        const styles = useStyles()
+
+        return (
+            <div>
+                <div className={styles.container}>
+                    <d3fc-canvas
+                        use-device-pixel-ratio
+                        set-webgl-viewport
+                        class={styles.graph}
+                        ref={main_canvas}
+                    />
+                    <svg
+                        className={styles.yaxis}
+                    >
+                    <path className={styles.yaxis_line}
+                        d={
+                            d3.line()([[yaxis_width, 0], [yaxis_width, plot_height]])
+                        }
+                    />
+
+                    </svg>
+                    <d3fc-svg
+                        class={styles.xaxis}
+                        ref={x_axis}
+                    />
+                </div>
+            </div>
+        ) 
     }
 }
 
 export const Plot: FunctionComponent<Props> = (props) => {
-    const main_canvas = useRef()
-    const x_axis = useRef()
-    const y_axis = useRef()
-    const fcref = useRef<D3FCPlot>()
-    useEffect(() => {
-        if (!fcref.current) {
-            fcref.current = new D3FCPlot(main_canvas.current, x_axis.current, y_axis.current, props)
-        } else {
-            fcref.current.update(props)
+        const impl = useRef<PlotImpl>()
+        if (impl.current == null) {
+            impl.current = new PlotImpl()
         }
-    })
-    const styles = useStyles()
-    return (
-        <div>
-            <div className={styles.container}>
-                <d3fc-canvas
-                    use-device-pixel-ratio
-                    set-webgl-viewport
-                    class={styles.graph}
-                    ref={main_canvas}
-                />
-                <d3fc-svg
-                    class={styles.yaxis}
-                    ref={y_axis}
-                />
-                <d3fc-svg
-                    class={styles.xaxis}
-                    ref={x_axis}
-                />
-            </div>
-        </div>
-    ) 
+        return impl.current.render(props)
 }
