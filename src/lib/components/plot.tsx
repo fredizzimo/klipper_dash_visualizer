@@ -113,15 +113,6 @@ class PlotImpl extends Component<Props, State> {
 
     resize_observer: ResizeObserver
 
-    renderCanvas() {
-        requestAnimationFrame(() => {
-            const canvas = this.main_canvas_ref.current
-            for (let i=0;i<this.series.length;i++) {
-                this.series[i](this.props.plot.traces[i].data);
-            }
-        })
-    }
-
     initialize_plot() {
         const props = this.props
         const traces = props.plot.traces
@@ -228,17 +219,24 @@ class PlotImpl extends Component<Props, State> {
         this.setState({width, height})
     }
 
+    renderCanvas() {
+        requestAnimationFrame(() => {
+            const canvas = this.main_canvas_ref.current
+            const gl = canvas.getContext("webgl");
+            for (let i=0;i<this.series.length;i++) {
+                if (this.series[i].context() != gl) {
+                    this.series[i].context(gl)
+                }
+                this.series[i](this.props.plot.traces[i].data);
+            }
+        })
+    }
+
     componentDidMount() {
         this.resize_observer = new ResizeObserver((entries: readonly ResizeObserverEntry[]) =>
             this.elementsResized(entries))
 
-        
-        // TODO: Can this be defererd to the rendering
         const canvas = this.main_canvas_ref.current
-        const gl = canvas.getContext("webgl");
-        for (let i=0;i<this.series.length;i++) {
-            this.series[i].context(gl);
-        }
         this.resize_observer.observe(this.graph_container_ref.current)
     }
 
