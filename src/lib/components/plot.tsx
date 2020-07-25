@@ -67,6 +67,9 @@ const styles = (theme: Theme) => createStyles({
     },
     yaxis_line: {
         stroke: "black",
+    },
+    yaxis_tick: {
+        stroke: "black"
     }
 });
 
@@ -113,6 +116,14 @@ class PlotImpl extends Component<Props, State> {
 
     resize_observer: ResizeObserver
 
+    constructor(props: Props) {
+        super(props)
+        this.state = {
+            width: 0,
+            height: 0
+        }
+    }
+
     initialize_plot() {
         const props = this.props
         const traces = props.plot.traces
@@ -145,6 +156,8 @@ class PlotImpl extends Component<Props, State> {
             .ticks(y_axis_ticks)
             .tickSize(axis_tick_size)
             .tickPadding(axis_tick_padding)
+
+        this.updateScales(this.state.width, this.state.height)
     }
 
     updateSelectedTime() {
@@ -192,6 +205,16 @@ class PlotImpl extends Component<Props, State> {
         return [range_low, range_high];
     }
 
+    updateScales(width: number, height: number) {
+        if (width == 0 || height == 0) {
+            return 
+        }
+        this.xScale.range([0, width]);
+        for (let i=0;i<this.y_scales.length;i++) {
+            this.y_scales[i].range([height, 0]);
+        }
+    }
+
     elementsResized(entries: readonly ResizeObserverEntry[]) {
         for (let i=0;i<entries.length;i++) {
             const entry = entries[i]
@@ -210,12 +233,7 @@ class PlotImpl extends Component<Props, State> {
         canvas.setAttribute('width', width);
         canvas.setAttribute('height', height);
         gl.viewport(0, 0, width*pixel_ratio, height*pixel_ratio)
-
-        this.xScale.range([0, width]);
-        for (let i=0;i<this.y_scales.length;i++) {
-            this.y_scales[i].range([height, 0]);
-        }
-
+        this.updateScales(width, height)
         this.setState({width, height})
     }
 
@@ -252,6 +270,37 @@ class PlotImpl extends Component<Props, State> {
             .call(this.xAxis)
     }
 
+    renderYAxis() {
+        if (this.y_scales.length == 0) {
+            return null
+        }
+        if (this.state.width == 0 || this.state.height==0) {
+            return
+        }
+        const first_scale = this.y_scales[0]
+        const range = first_scale.range()
+        const ticks = first_scale.ticks(y_axis_ticks)
+        const ticks_pos = ld.map(ticks, (tick: number) => first_scale(tick))
+
+        const tick_line_left = yaxis_width - axis_tick_size
+        const tick_lines = ld.flatten(ld.map(ticks_pos, 
+            (pos: number) => [[tick_line_left, pos], [yaxis_width, pos], null])) as [][number]
+
+        const line_command = d3.line()([[yaxis_width, range[0]], [yaxis_width, range[1]]])
+        const tick_lines_command = d3.line().defined((v: any) => {return v != null})(tick_lines)
+
+
+        const styles = this.props.classes
+        return (
+            <svg
+                className={styles.yaxis}
+            >
+                <path className={styles.yaxis_line} d={line_command}/>
+                <path className={styles.yaxis_tick} d={tick_lines_command} />
+            </svg>
+        )
+    }
+
     render() {
         if (this.plot != this.props.plot) {
             this.initialize_plot()
@@ -271,16 +320,7 @@ class PlotImpl extends Component<Props, State> {
                             ref={this.main_canvas_ref}
                         />
                     </div>
-                    <svg
-                        className={styles.yaxis}
-                    >
-                    <path className={styles.yaxis_line}
-                        d={
-                            d3.line()([[yaxis_width, 0], [yaxis_width, plot_height]])
-                        }
-                    />
-
-                    </svg>
+                    {this.renderYAxis()}
                     <d3fc-svg
                         class={styles.xaxis}
                         ref={this.x_axis_ref}
