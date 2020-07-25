@@ -43,7 +43,14 @@ const styles = (theme: Theme) => createStyles({
         `
     },
     graph: {
-        gridArea: "graph"
+        gridArea: "graph",
+        position: "relative",
+        display: "block",
+        "& canvas": {
+            position: "absolute",
+            height: "100%",
+            width: "100%"
+        }
     },
     xaxis: {
         gridArea: "xaxis",
@@ -80,7 +87,8 @@ interface Props extends WithStyles<typeof styles>{
 }
 
 type State = {
-
+    width: number;
+    height: number;
 }
 
 class PlotImpl extends Component<Props, State> {
@@ -100,15 +108,31 @@ class PlotImpl extends Component<Props, State> {
     y_scales: ScaleLinearFixedTicks[]
     y_axis: any
     main_canvas_ref = createRef<any>()
+    graph_container_ref = createRef<HTMLDivElement>()
     x_axis_ref = createRef<any>()
 
+    resize_observer: ResizeObserver
+
     componentDidMount() {
-        this.renderCanvas()
-        this.main_canvas_ref.current.requestRedraw()
+        this.resize_observer = new ResizeObserver((entries: readonly ResizeObserverEntry[]) =>
+            this.elementsResized(entries))
+
+        
+        // TODO: Can this be defererd to the rendering
+        const canvas = this.main_canvas_ref.current
+        const gl = canvas.getContext("webgl");
+        for (let i=0;i<this.series.length;i++) {
+            this.series[i].context(gl);
+        }
+        this.resize_observer.observe(this.graph_container_ref.current)
     }
 
     componentDidUpdate() {
-        this.main_canvas_ref.current.requestRedraw()
+        this.renderCanvas()
+        // TODO this should be rendered normally through react
+        d3.select(this.x_axis_ref.current)
+            .select("svg")
+            .call(this.xAxis)
     }
 
     render() {
@@ -124,12 +148,12 @@ class PlotImpl extends Component<Props, State> {
         return (
             <div>
                 <div className={styles.container}>
-                    <d3fc-canvas
-                        use-device-pixel-ratio
-                        set-webgl-viewport
-                        class={styles.graph}
-                        ref={this.main_canvas_ref}
-                    />
+                    <div className={styles.graph} ref={this.graph_container_ref}>
+                        <canvas
+                            className={styles.graph}
+                            ref={this.main_canvas_ref}
+                        />
+                    </div>
                     <svg
                         className={styles.yaxis}
                     >
@@ -150,29 +174,12 @@ class PlotImpl extends Component<Props, State> {
     }
 
     renderCanvas() {
-        const canvas = this.main_canvas_ref.current
-        d3.select(canvas)
-            .on('measure', () => {
-                canvas.querySelector("canvas")
-                const { width, height, pixelRatio} = d3.event.detail;
-                this.xScale.range([0, width / pixelRatio ]);
-                for (let i=0;i<this.y_scales.length;i++) {
-                    this.y_scales[i].range([height / pixelRatio, 0]);
-                }
-
-                const gl = canvas.querySelector('canvas').getContext('webgl');
-                for (let i=0;i<this.series.length;i++) {
-                    this.series[i].context(gl);
-                }
-            })
-            .on('draw', () => {
-                for (let i=0;i<this.series.length;i++) {
-                    this.series[i](this.props.plot.traces[i].data);
-                }
-                d3.select(this.x_axis_ref.current)
-                    .select("svg")
-                    .call(this.xAxis)
-            });
+        requestAnimationFrame(() => {
+            const canvas = this.main_canvas_ref.current
+            for (let i=0;i<this.series.length;i++) {
+                this.series[i](this.props.plot.traces[i].data);
+            }
+        })
     }
 
     initialize_plot() {
@@ -252,6 +259,33 @@ class PlotImpl extends Component<Props, State> {
             range_high += min_diff
         }
         return [range_low, range_high];
+    }
+
+    elementsResized(entries: readonly ResizeObserverEntry[]) {
+        for (let i=0;i<entries.length;i++) {
+            const entry = entries[i]
+            if (entry.target == this.graph_container_ref.current) {
+                this.mainCanvasResized(entry)
+            }
+        }
+    }
+
+    mainCanvasResized(entry: ResizeObserverEntry) {
+        const canvas = this.main_canvas_ref.current
+        const gl = canvas.getContext('webgl');
+        const width = entry.contentRect.width
+        const height = entry.contentRect.height
+        const pixel_ratio = window.devicePixelRatio
+        canvas.setAttribute('width', width);
+        canvas.setAttribute('height', height);
+        gl.viewport(0, 0, width*pixel_ratio, height*pixel_ratio)
+
+        this.xScale.range([0, width]);
+        for (let i=0;i<this.y_scales.length;i++) {
+            this.y_scales[i].range([height, 0]);
+        }
+
+        this.setState({width, height})
     }
 }
 
