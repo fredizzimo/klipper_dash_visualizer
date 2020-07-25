@@ -113,66 +113,6 @@ class PlotImpl extends Component<Props, State> {
 
     resize_observer: ResizeObserver
 
-    componentDidMount() {
-        this.resize_observer = new ResizeObserver((entries: readonly ResizeObserverEntry[]) =>
-            this.elementsResized(entries))
-
-        
-        // TODO: Can this be defererd to the rendering
-        const canvas = this.main_canvas_ref.current
-        const gl = canvas.getContext("webgl");
-        for (let i=0;i<this.series.length;i++) {
-            this.series[i].context(gl);
-        }
-        this.resize_observer.observe(this.graph_container_ref.current)
-    }
-
-    componentDidUpdate() {
-        this.renderCanvas()
-        // TODO this should be rendered normally through react
-        d3.select(this.x_axis_ref.current)
-            .select("svg")
-            .call(this.xAxis)
-    }
-
-    render() {
-        if (this.plot != this.props.plot) {
-            this.initialize_plot()
-        }
-        if (this.selected_time != this.props.selected_time) {
-            this.updateSelectedTime()
-        }
-
-        const styles = this.props.classes
-
-        return (
-            <div>
-                <div className={styles.container}>
-                    <div className={styles.graph} ref={this.graph_container_ref}>
-                        <canvas
-                            className={styles.graph}
-                            ref={this.main_canvas_ref}
-                        />
-                    </div>
-                    <svg
-                        className={styles.yaxis}
-                    >
-                    <path className={styles.yaxis_line}
-                        d={
-                            d3.line()([[yaxis_width, 0], [yaxis_width, plot_height]])
-                        }
-                    />
-
-                    </svg>
-                    <d3fc-svg
-                        class={styles.xaxis}
-                        ref={this.x_axis_ref}
-                    />
-                </div>
-            </div>
-        ) 
-    }
-
     renderCanvas() {
         requestAnimationFrame(() => {
             const canvas = this.main_canvas_ref.current
@@ -286,6 +226,70 @@ class PlotImpl extends Component<Props, State> {
         }
 
         this.setState({width, height})
+    }
+
+    componentDidMount() {
+        this.resize_observer = new ResizeObserver((entries: readonly ResizeObserverEntry[]) =>
+            this.elementsResized(entries))
+
+        
+        // TODO: Can this be defererd to the rendering
+        const canvas = this.main_canvas_ref.current
+        const gl = canvas.getContext("webgl");
+        for (let i=0;i<this.series.length;i++) {
+            this.series[i].context(gl);
+        }
+        this.resize_observer.observe(this.graph_container_ref.current)
+    }
+
+    componentWillUnmount() {
+        this.resize_observer.disconnect()
+    }
+
+    componentDidUpdate() {
+        this.renderCanvas()
+        // TODO this should be rendered normally through react
+        d3.select(this.x_axis_ref.current)
+            .select("svg")
+            .call(this.xAxis)
+    }
+
+    render() {
+        if (this.plot != this.props.plot) {
+            this.initialize_plot()
+        }
+        if (this.selected_time != this.props.selected_time) {
+            this.updateSelectedTime()
+        }
+
+        const styles = this.props.classes
+
+        return (
+            <div>
+                <div className={styles.container}>
+                    <div className={styles.graph} ref={this.graph_container_ref}>
+                        <canvas
+                            className={styles.graph}
+                            ref={this.main_canvas_ref}
+                        />
+                    </div>
+                    <svg
+                        className={styles.yaxis}
+                    >
+                    <path className={styles.yaxis_line}
+                        d={
+                            d3.line()([[yaxis_width, 0], [yaxis_width, plot_height]])
+                        }
+                    />
+
+                    </svg>
+                    <d3fc-svg
+                        class={styles.xaxis}
+                        ref={this.x_axis_ref}
+                    />
+                </div>
+            </div>
+        ) 
     }
 }
 
