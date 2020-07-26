@@ -281,6 +281,7 @@ class PlotImpl extends Component<Props, State> {
         if (this.state.width == 0 || this.state.height==0) {
             return
         }
+        const styles = this.props.classes
         const first_scale = this.y_scales[0]
         const range = first_scale.range()
         const ticks = first_scale.ticks(y_axis_ticks)
@@ -294,25 +295,30 @@ class PlotImpl extends Component<Props, State> {
         const tick_lines_command = d3.line().defined((v: any) => {return v != null})(tick_lines)
 
         const tick_format = first_scale.tickFormat(y_axis_ticks)
-        const tick_labels = ld.map(ticks, (tick: number) => tick_format(tick))
 
         const label_right = tick_line_left - axis_tick_padding
-
-        const styles = this.props.classes
-
-        const label = (label: string, pos: number) => {
+        const label_width = label_right / this.y_scales.length
+        const label = (label: string, x_pos: number, y_pos: number, color: string) => {
             return (
-                <text x={label_right} y={pos} className={styles.yaxis_label}>
+                <text x={x_pos} y={y_pos} className={styles.yaxis_label} stroke={color}>
                     {label}
                 </text>
             )
         }
-        const labels = ld.map(ld.zip(tick_labels, ticks_pos), (e: any[]) => label(e[0], e[1]))
+        const labels = ld.flatMap(ld.range(this.y_scales.length), (i: number) => {
+            const scale = this.y_scales[i]
+            const ticks = scale.ticks(y_axis_ticks)
+            const ticks_pos = ld.map(ticks, (tick: number) => scale(tick))
+            const tick_labels = ld.map(ticks, (tick: number) => tick_format(tick))
+            const label_pos = label_right - i * label_width
+            const color = trace_colors[i].hex()
+
+            const labels = ld.map(ld.zip(tick_labels, ticks_pos), (e: any[]) => label(e[0], label_pos, e[1], color))
+            return labels
+        })
 
         return (
-            <svg
-                className={styles.yaxis}
-            >
+            <svg className={styles.yaxis}>
                 <path className={styles.yaxis_line} d={line_command}/>
                 <path className={styles.yaxis_tick} d={tick_lines_command} />
                 {labels}
