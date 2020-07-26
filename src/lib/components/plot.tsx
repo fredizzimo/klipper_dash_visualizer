@@ -70,6 +70,10 @@ const styles = (theme: Theme) => createStyles({
     },
     yaxis_tick: {
         stroke: "black"
+    },
+    yaxis_label: {
+        textAnchor: "end",
+        dominantBaseline: "middle"
     }
 });
 
@@ -289,14 +293,29 @@ class PlotImpl extends Component<Props, State> {
         const line_command = d3.line()([[yaxis_width, range[0]], [yaxis_width, range[1]]])
         const tick_lines_command = d3.line().defined((v: any) => {return v != null})(tick_lines)
 
+        const tick_format = first_scale.tickFormat(y_axis_ticks)
+        const tick_labels = ld.map(ticks, (tick: number) => tick_format(tick))
+
+        const label_right = tick_line_left - axis_tick_padding
 
         const styles = this.props.classes
+
+        const label = (label: string, pos: number) => {
+            return (
+                <text x={label_right} y={pos} className={styles.yaxis_label}>
+                    {label}
+                </text>
+            )
+        }
+        const labels = ld.map(ld.zip(tick_labels, ticks_pos), (e: any[]) => label(e[0], e[1]))
+
         return (
             <svg
                 className={styles.yaxis}
             >
                 <path className={styles.yaxis_line} d={line_command}/>
                 <path className={styles.yaxis_tick} d={tick_lines_command} />
+                {labels}
             </svg>
         )
     }
