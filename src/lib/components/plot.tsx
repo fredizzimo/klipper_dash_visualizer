@@ -13,12 +13,10 @@ const axis_font = "sans-serif"
 const axis_tick_size = 6
 const axis_tick_padding = 3
 const axis_min_label_spacing = axis_font_size / 2
-const plot_height = 500
 const y_axis_ticks = 10
 const x_axis_ticks = 10
 
 const axis_height = axis_font_size + axis_tick_size + axis_tick_padding
-const yaxis_width = 100
 
 const trace_colors = [
     d3.color("rgb(31, 119, 180)"),
@@ -34,12 +32,12 @@ const trace_colors = [
 ]
 
 const styles = (theme: Theme) => createStyles({
-    container: {
+    grid: {
         position: "relative",
         display: "grid",
-        width: "100%",
-        gridTemplateColumns: `${yaxis_width}px 1fr`,
-        gridTemplateRows: `${plot_height}px ${axis_height}px`,
+        padding: "10px",
+        gridTemplateColumns: `100px 1fr`,
+        gridTemplateRows: `500px ${axis_height}px`,
         gridTemplateAreas: ` 
             "yaxis   graph"
             ".       xaxis"
@@ -62,31 +60,10 @@ const styles = (theme: Theme) => createStyles({
     },
     xaxis: {
         gridArea: "xaxis",
-        "& svg": {
-            fontSize: axis_font_size
-        }
     },
     yaxis: {
         gridArea: "yaxis",
-        fontSize: axis_font_size,
-        position: "relative",
-        display: "block",
-        "& canvas": {
-            position: "absolute",
-            height: "100%",
-            width: "100%"
-        }
     },
-    yaxis_line: {
-        stroke: "black",
-    },
-    yaxis_tick: {
-        stroke: "black"
-    },
-    yaxis_label: {
-        textAnchor: "end",
-        dominantBaseline: "middle"
-    }
 });
 
 type Trace = {
@@ -129,6 +106,12 @@ class PlotImpl extends Component<Props, State> {
 
     canvas_ref = createRef<HTMLCanvasElement>()
     container_ref = createRef<HTMLDivElement>()
+
+    x_axis_ref = createRef<HTMLDivElement>()
+    y_axis_ref = createRef<HTMLDivElement>()
+
+    x_axis_rect: DOMRectReadOnly
+    y_axis_rect: DOMRectReadOnly
 
     series: any[]
 
@@ -229,19 +212,33 @@ class PlotImpl extends Component<Props, State> {
         }
     }
 
+
     elementsResized(entries: readonly ResizeObserverEntry[]) {
+        const getRect = (element: HTMLDivElement, entry: ResizeObserverEntry) => {
+            const x = element.offsetLeft
+            const y = element.offsetTop
+            const rect = entry.contentRect
+            const width = rect.width
+            const height = rect.height
+            return DOMRectReadOnly.fromRect({x, y, width, height})
+        }
         for (let i=0;i<entries.length;i++) {
             const entry = entries[i]
             if (entry.target == this.graph_container_ref.current) {
-                this.canvasResized(entry, this.graph_canvas_ref.current, this.graph_canvas_resized)
+                this.graphCanvasResized(entry)
             } else if(entry.target == this.container_ref.current) {
-                this.canvasResized(entry, this.canvas_ref.current, this.canvas_resized)
+                this.canvasResized(entry)
+            } else if (entry.target == this.x_axis_ref.current) {
+                this.x_axis_rect = getRect(this.x_axis_ref.current, entry)
+            } else if (entry.target == this.y_axis_ref.current) {
+                this.y_axis_rect = getRect(this.y_axis_ref.current, entry)
             }
         }
     }
 
-    canvasResized(entry: ResizeObserverEntry, canvas: HTMLCanvasElement,
-            f?: (canvas: HTMLCanvasElement, width: number, height: number, pixel_width: number, pixel_height: number, device_pixel_ratio: number) => void) {
+    graphCanvasResized = (entry: ResizeObserverEntry) => {
+        const canvas = this.graph_canvas_ref.current
+        const context = canvas.getContext("webgl");
         const pixel_ratio = window.devicePixelRatio
         const width = entry.contentRect.width
         const height = entry.contentRect.height
@@ -249,21 +246,23 @@ class PlotImpl extends Component<Props, State> {
         const pixel_height = height * pixel_ratio
         canvas.width = pixel_width
         canvas.height = pixel_height
-        if (f != null) {
-            f(canvas, width, height, pixel_width, pixel_height, devicePixelRatio)
-        }
-    }
-
-    graph_canvas_resized = (canvas: HTMLCanvasElement, width: number, height: number, pixel_width: number, pixel_height: number, device_pixel_ratio: number) => {
-        const context = canvas.getContext("webgl");
         context.viewport(0, 0, pixel_width, pixel_height)
         this.updateScales(width, height)
         this.setState({width, height})
     }
 
-    canvas_resized = (canvas: HTMLCanvasElement, width: number, height: number, pixel_width: number, pixel_height: number, device_pixel_ratio: number) => {
+    canvasResized = (entry: ResizeObserverEntry) => {
+        const canvas = this.canvas_ref.current
+        const pixel_ratio = window.devicePixelRatio
+        const rect = this.container_ref.current.getBoundingClientRect()
+        const width = rect.width
+        const height = rect.height
+        const pixel_width = width * pixel_ratio
+        const pixel_height = height * pixel_ratio
+        canvas.width = pixel_width
+        canvas.height = pixel_height
         const context = canvas.getContext("2d");
-        context.scale(device_pixel_ratio, device_pixel_ratio)
+        context.scale(pixel_ratio, pixel_ratio)
     }
 
     getAxisFont(size: number) {
@@ -343,14 +342,15 @@ class PlotImpl extends Component<Props, State> {
         const scale = this.x_scale
         const ticks = scale.ticks(x_axis_ticks)
         const ticks_pos = ld.map(ticks, (tick: number) => scale(tick))
-        const offset = yaxis_width
-        this.renderAxisLine(ctx, this.x_scale, ticks_pos, plot_height, offset, false)
+        const offset = this.x_axis_rect.left
+        const top = this.x_axis_rect.top
+        this.renderAxisLine(ctx, this.x_scale, ticks_pos, top, offset, false)
         ctx.textAlign = "center"
         ctx.textBaseline = "top"
         ctx.fillStyle = "black"
         const tick_format = scale.tickFormat(y_axis_ticks)
         const labels = ld.map(ticks, (tick: number) => tick_format(tick))
-        const y_pos = plot_height + axis_tick_size + axis_tick_padding
+        const y_pos = top + axis_tick_size + axis_tick_padding
 
         for (let i=0; i < ticks.length; i++) {
             const x_pos =  ticks_pos[i] + offset
@@ -359,15 +359,17 @@ class PlotImpl extends Component<Props, State> {
     }
 
     renderYAxis(ctx: CanvasRenderingContext2D) {
+        const top = this.y_axis_rect.top
+        const pos = this.y_axis_rect.right
         const first_scale = this.y_scales[0]
         const ticks = first_scale.ticks(y_axis_ticks)
         const ticks_pos = ld.map(ticks, (tick: number) => first_scale(tick))
 
-        this.renderAxisLine(ctx, first_scale, ticks_pos, yaxis_width, 0, true)
+        this.renderAxisLine(ctx, first_scale, ticks_pos, pos, top, true)
 
-        const tick_line_left = yaxis_width - axis_tick_size
+        const tick_line_left = pos - axis_tick_size
         const label_right = tick_line_left - axis_tick_padding
-        const label_width = label_right / this.y_scales.length
+        const label_width = (label_right - this.y_axis_rect.left) / this.y_scales.length
 
         const tick_format = first_scale.tickFormat(y_axis_ticks)
 
@@ -391,7 +393,7 @@ class PlotImpl extends Component<Props, State> {
             ctx.font = this.getAxisFont(axis_font_size*text_scale)
             
             for (let i=0;i<ticks.length; i++) {
-                const y_pos = ticks_pos[i]
+                const y_pos = ticks_pos[i] + top
                 ctx.fillText(labels[i], x_pos, y_pos)
             }
         }
@@ -403,6 +405,8 @@ class PlotImpl extends Component<Props, State> {
 
         this.resize_observer.observe(this.graph_container_ref.current)
         this.resize_observer.observe(this.container_ref.current)
+        this.resize_observer.observe(this.x_axis_ref.current)
+        this.resize_observer.observe(this.y_axis_ref.current)
     }
 
     componentWillUnmount() {
@@ -428,13 +432,13 @@ class PlotImpl extends Component<Props, State> {
 
         return (
             <div>
-                <div className={styles.container} ref={this.container_ref}>
+                <div className={styles.grid} ref={this.container_ref}>
                     <div className={styles.graph} ref={this.graph_container_ref}>
                         <canvas ref={this.graph_canvas_ref}/>
                     </div>
-                    <div className={styles.yaxis}>
+                    <div className={styles.yaxis} ref={this.y_axis_ref}>
                     </div>
-                    <div className={styles.xaxis}>
+                    <div className={styles.xaxis} ref={this.x_axis_ref}>
                     </div>
                     <canvas ref={this.canvas_ref} className={styles.canvas}/>
                 </div>
