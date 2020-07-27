@@ -6,12 +6,13 @@ import { WithStyles, withStyles, useTheme, createStyles } from "@material-ui/sty
 import * as ld from "lodash"
 import {range_start, range_end, get_min_max} from "../helpers"
 import {scaleLinearFixedTicks, ScaleLinearFixedTicks} from "../linear_fixed_ticks_scale"
-import { Axis } from "d3";
+import { Axis, text } from "d3";
 
 const axis_font_size = 10
-const y_axis_font = "sans-serif 10px"
+const axis_font = "sans-serif"
 const axis_tick_size = 6
 const axis_tick_padding = 3
+const axis_min_label_spacing = axis_font_size / 2
 const plot_height = 500
 const y_axis_ticks = 10
 const x_axis_ticks = 10
@@ -271,6 +272,10 @@ class PlotImpl extends Component<Props, State> {
         context.scale(device_pixel_ratio, device_pixel_ratio)
     }
 
+    getAxisFont(size: number) {
+        return ` ${size}px ${axis_font}`
+    }
+
     renderCanvas() {
         requestAnimationFrame(() => {
             const canvas = this.graph_canvas_ref.current
@@ -327,19 +332,26 @@ class PlotImpl extends Component<Props, State> {
 
         ctx.textAlign = "right"
         ctx.textBaseline = "middle"
-        ctx.font = y_axis_font
         for (let trace_nr=0; trace_nr < this.y_scales.length; trace_nr++) {
             const scale = this.y_scales[trace_nr]
             const ticks = scale.ticks(y_axis_ticks)
             const x_pos = label_right - trace_nr * label_width
             const color = trace_colors[trace_nr].hex()
             ctx.fillStyle = color
+            const labels = ld.map(ticks, (tick: number) => tick_format(tick))
 
+            ctx.font = this.getAxisFont(axis_font_size)
+            const max_length = ld.max(ld.map(labels, (label: string) => ctx.measureText(label).width ))
+            let text_scale=1.0
+            const max_width = label_width - axis_min_label_spacing
+            if (max_length > max_width) {
+                text_scale = max_width / max_length
+            }
+            ctx.font = this.getAxisFont(axis_font_size*text_scale)
+            
             for (let i=0;i<ticks.length; i++) {
                 const y_pos = ticks_pos[i]
-                const label = tick_format(ticks[i])
-                ctx.fillText(label, x_pos, y_pos)
-
+                ctx.fillText(labels[i], x_pos, y_pos)
             }
         }
     }
