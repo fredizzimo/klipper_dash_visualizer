@@ -6,7 +6,7 @@ import { WithStyles, withStyles, useTheme, createStyles } from "@material-ui/sty
 import * as ld from "lodash"
 import {range_start, range_end, get_min_max} from "../helpers"
 import {scaleLinearFixedTicks, ScaleLinearFixedTicks} from "../linear_fixed_ticks_scale"
-import { Axis, text } from "d3";
+import { Axis, text, ScaleLinear } from "d3";
 
 const axis_font_size = 10
 const axis_font = "sans-serif"
@@ -113,9 +113,10 @@ type State = {
 class PlotImpl extends Component<Props, State> {
     extent = fc.extentLinear();
 
-    xScale = d3.scaleLinear()
+    x_scale = d3.scaleLinear()
+    y_scales: ScaleLinearFixedTicks[]
 
-    xAxis = fc.axisBottom(this.xScale)
+    xAxis = fc.axisBottom(this.x_scale)
         .ticks(x_axis_ticks)
         .tickSize(axis_tick_size)
         .tickPadding(axis_tick_padding)
@@ -130,9 +131,6 @@ class PlotImpl extends Component<Props, State> {
     container_ref = createRef<HTMLDivElement>()
 
     series: any[]
-    y_scales: ScaleLinearFixedTicks[]
-    y_axis: any
-    x_axis_ref = createRef<any>()
 
     resize_observer: ResizeObserver
 
@@ -158,7 +156,7 @@ class PlotImpl extends Component<Props, State> {
 
             const series = fc
                 .seriesWebglLine()
-                .xScale(this.xScale)
+                .xScale(this.x_scale)
                 .yScale(y_scale)
                 .crossValue((_: any, i: number) => props.plot.times[i])
                 .mainValue((d: number) => d)
@@ -172,23 +170,19 @@ class PlotImpl extends Component<Props, State> {
             this.y_scales[i] = y_scale
             this.series[i] = series
         }
-        this.y_axis = fc.axisLeft(this.y_scales[0])
-            .ticks(y_axis_ticks)
-            .tickSize(axis_tick_size)
-            .tickPadding(axis_tick_padding)
 
         this.updateScales(this.state.width, this.state.height)
     }
 
     updateSelectedTime() {
         this.selected_time = this.props.selected_time
-        this.xScale.domain(this.props.selected_time)
+        this.x_scale.domain(this.props.selected_time)
         this.zoomTraces()
     }
 
     zoomTraces() {
         const props = this.props
-        const time = this.xScale.domain()
+        const time = this.x_scale.domain()
         const times = props.plot.times
         for (let trace=0;trace<props.plot.traces.length;trace++) {
             const data = props.plot.traces[trace].data
@@ -229,7 +223,7 @@ class PlotImpl extends Component<Props, State> {
         if (width == 0 || height == 0) {
             return 
         }
-        this.xScale.range([0, width]);
+        this.x_scale.range([0, width]);
         for (let i=0;i<this.y_scales.length;i++) {
             this.y_scales[i].range([height, 0]);
         }
@@ -289,7 +283,7 @@ class PlotImpl extends Component<Props, State> {
         })
     }
 
-    renderYAxis() {
+    renderAxes() {
         const ctx = this.canvas_ref.current.getContext("2d")
         const width = ctx.canvas.width
         const height = ctx.canvas.height
@@ -303,32 +297,79 @@ class PlotImpl extends Component<Props, State> {
             return
         }
 
-        const first_scale = this.y_scales[0]
-        const range = first_scale.range()
-        const ticks = first_scale.ticks(y_axis_ticks)
-        const ticks_pos = ld.map(ticks, (tick: number) => first_scale(tick))
+        this.renderXAxis(ctx)
+        this.renderYAxis(ctx)
+    }
 
-        const tick_line_left = yaxis_width - axis_tick_size
+    renderAxisLine(ctx: CanvasRenderingContext2D, scale: d3.ScaleLinear<number, number>,
+            ticks_pos: number[], position: number, offset: number, vertical: boolean) {
+        const range = scale.range()
+
+        const tick_line_end = vertical ? position - axis_tick_size : position + axis_tick_size
 
         ctx.lineWidth = 1
         ctx.strokeStyle = "black"
 
+        const range_start = range[0] + offset
+        const range_end = range[1] + offset
+
+
         ctx.beginPath()
-        ctx.moveTo(yaxis_width, range[0])
-        ctx.lineTo(yaxis_width, range[1])
+        if (vertical) {
+            ctx.moveTo(position, range_start)
+            ctx.lineTo(position, range_end)
+        }
+        else {
+            ctx.moveTo(range_start, position)
+            ctx.lineTo(range_end, position)
+
+        }
 
         for (let i=0;i<ticks_pos.length; i++) {
-            const pos = ticks_pos[i]
-            ctx.moveTo(tick_line_left, pos)
-            ctx.lineTo(yaxis_width, pos)
+            const tick_pos = ticks_pos[i] + offset
+            if (vertical) {
+                ctx.moveTo(tick_line_end, tick_pos)
+                ctx.lineTo(position, tick_pos)
+            } else {
+                ctx.moveTo(tick_pos, tick_line_end)
+                ctx.lineTo(tick_pos, position)
+            }
         }
 
         ctx.stroke()
+    }
 
-        const tick_format = first_scale.tickFormat(y_axis_ticks)
+    renderXAxis(ctx: CanvasRenderingContext2D) {
+        const scale = this.x_scale
+        const ticks = scale.ticks(x_axis_ticks)
+        const ticks_pos = ld.map(ticks, (tick: number) => scale(tick))
+        const offset = yaxis_width
+        this.renderAxisLine(ctx, this.x_scale, ticks_pos, plot_height, offset, false)
+        ctx.textAlign = "center"
+        ctx.textBaseline = "top"
+        ctx.fillStyle = "black"
+        const tick_format = scale.tickFormat(y_axis_ticks)
+        const labels = ld.map(ticks, (tick: number) => tick_format(tick))
+        const y_pos = plot_height + axis_tick_size + axis_tick_padding
 
+        for (let i=0; i < ticks.length; i++) {
+            const x_pos =  ticks_pos[i] + offset
+            ctx.fillText(labels[i], x_pos, y_pos)
+        }
+    }
+
+    renderYAxis(ctx: CanvasRenderingContext2D) {
+        const first_scale = this.y_scales[0]
+        const ticks = first_scale.ticks(y_axis_ticks)
+        const ticks_pos = ld.map(ticks, (tick: number) => first_scale(tick))
+
+        this.renderAxisLine(ctx, first_scale, ticks_pos, yaxis_width, 0, true)
+
+        const tick_line_left = yaxis_width - axis_tick_size
         const label_right = tick_line_left - axis_tick_padding
         const label_width = label_right / this.y_scales.length
+
+        const tick_format = first_scale.tickFormat(y_axis_ticks)
 
         ctx.textAlign = "right"
         ctx.textBaseline = "middle"
@@ -371,12 +412,8 @@ class PlotImpl extends Component<Props, State> {
     componentDidUpdate() {
         requestAnimationFrame(() => {
             this.renderCanvas()
-            this.renderYAxis()
+            this.renderAxes()
         })
-        // TODO this should be rendered normally through react
-        d3.select(this.x_axis_ref.current)
-            .select("svg")
-            .call(this.xAxis)
     }
 
     render() {
@@ -395,10 +432,10 @@ class PlotImpl extends Component<Props, State> {
                     <div className={styles.graph} ref={this.graph_container_ref}>
                         <canvas ref={this.graph_canvas_ref}/>
                     </div>
-                    <d3fc-svg
-                        class={styles.xaxis}
-                        ref={this.x_axis_ref}
-                    />
+                    <div className={styles.yaxis}>
+                    </div>
+                    <div className={styles.xaxis}>
+                    </div>
                     <canvas ref={this.canvas_ref} className={styles.canvas}/>
                 </div>
             </div>
