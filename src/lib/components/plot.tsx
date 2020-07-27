@@ -118,6 +118,8 @@ class PlotImpl extends Component<Props, State> {
     graph_container_ref = createRef<HTMLDivElement>()
     x_axis_ref = createRef<any>()
 
+    y_axis_label_column_widths: number[]
+
     resize_observer: ResizeObserver
 
     constructor(props: Props) {
@@ -296,11 +298,14 @@ class PlotImpl extends Component<Props, State> {
 
         const tick_format = first_scale.tickFormat(y_axis_ticks)
 
+        this.y_axis_label_column_widths = ld.fill(Array(this.y_scales.length), 0)
+
         const label_right = tick_line_left - axis_tick_padding
         const label_width = label_right / this.y_scales.length
-        const label = (label: string, x_pos: number, y_pos: number, color: string) => {
+        const label = (label: string, x_pos: number, y_pos: number,
+                color: string, calculateWidth: (element: SVGTextElement) => void) => {
             return (
-                <text x={x_pos} y={y_pos} className={styles.yaxis_label} stroke={color}>
+                <text x={x_pos} y={y_pos} className={styles.yaxis_label} stroke={color} ref={calculateWidth}>
                     {label}
                 </text>
             )
@@ -312,8 +317,17 @@ class PlotImpl extends Component<Props, State> {
             const tick_labels = ld.map(ticks, (tick: number) => tick_format(tick))
             const label_pos = label_right - i * label_width
             const color = trace_colors[i].hex()
+            const calculateWidth = (element: SVGTextElement) => {
+                if (element != null) {
+                    const bbox = element.getBBox()
+                    const length = bbox.width
+                    this.y_axis_label_column_widths[i] = Math.max(this.y_axis_label_column_widths[i], length)
+                }
+            }
 
-            const labels = ld.map(ld.zip(tick_labels, ticks_pos), (e: any[]) => label(e[0], label_pos, e[1], color))
+            const labels = ld.map(ld.zip(tick_labels, ticks_pos), (e: any[]) => {
+                return label(e[0], label_pos, e[1], color, calculateWidth)
+            })
             return labels
         })
 
