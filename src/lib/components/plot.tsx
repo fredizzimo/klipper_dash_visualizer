@@ -122,6 +122,7 @@ class PlotImpl extends Component<Props, State> {
     resize_observer: ResizeObserver
 
     mouse_pos: number[] = [0, 0]
+    brush_pos: number[] = null
 
     pixel_ratio: number
 
@@ -278,6 +279,22 @@ class PlotImpl extends Component<Props, State> {
         this.container_rect = rect
     }
 
+    getGraphCoordsFromMouse(x: number, y: number) {
+        const container_relative_x = x - this.container_rect.left
+        const graph_relative_x = container_relative_x - this.graph_rect.left
+        const container_relative_y = y - this.container_rect.top
+        const graph_relative_y = container_relative_y - this.graph_rect.top
+        let outside_x = false
+        let outside_y = false
+        if (graph_relative_x < 0 || graph_relative_x >= this.graph_rect.width)
+            outside_x = true
+        if (graph_relative_y < 0 || graph_relative_y >= this.graph_rect.height)
+            outside_y = true
+        const outside = outside_x || outside_y
+        return {container_relative_x, container_relative_y, graph_relative_x,
+            graph_relative_y, outside_x, outside_y, outside}
+    }
+
     getAxisFont(size: number) {
         return ` ${size}px ${axis_font}`
     }
@@ -309,7 +326,11 @@ class PlotImpl extends Component<Props, State> {
 
             if (this.y_scales.length > 0) {
                 this.renderAxes(ctx)
-                this.renderCrosshair(ctx)
+                if (this.brush_pos != null) {
+                    this.renderBrushing(ctx)
+                } else {
+                    this.renderCrosshair(ctx)
+                }
             }
         }
 
@@ -440,21 +461,16 @@ class PlotImpl extends Component<Props, State> {
         const left = this.graph_rect.left
         const right = this.graph_rect.right
 
-        const container_relative_x = this.mouse_pos[0] - this.container_rect.left
-        const graph_relative_x = container_relative_x - this.graph_rect.left
-        const container_relative_y = this.mouse_pos[1] - this.container_rect.top
-        const graph_relative_y = container_relative_y - this.graph_rect.top
-        if (graph_relative_x <= 0 || graph_relative_x >= this.graph_rect.width)
-            return
-        if (graph_relative_y <= 0 || graph_relative_y >= this.graph_rect.height)
+        const coords = this.getGraphCoordsFromMouse(this.mouse_pos[0], this.mouse_pos[1])
+        if (coords.outside)
             return
 
         ctx.lineWidth = this.getPixelLineWidth(1)
         ctx.strokeStyle = "black"
         ctx.globalAlpha = 0.3
         ctx.beginPath()
-        const x = this.getLinePosition(container_relative_x, ctx.lineWidth)
-        const y = this.getLinePosition(container_relative_y, ctx.lineWidth)
+        const x = this.getLinePosition(coords.container_relative_x, ctx.lineWidth)
+        const y = this.getLinePosition(coords.container_relative_y, ctx.lineWidth)
         ctx.moveTo(x, top)
         ctx.lineTo(x, bottom)
         ctx.moveTo(left, y)
@@ -463,8 +479,42 @@ class PlotImpl extends Component<Props, State> {
         ctx.globalAlpha = 1
     }
 
+    renderBrushing(ctx: CanvasRenderingContext2D) {
+        const top = this.graph_rect.top
+        const bottom = this.graph_rect.bottom
+        const left = this.graph_rect.left
+        const right = this.graph_rect.right
+        const start_coords = this.getGraphCoordsFromMouse(this.brush_pos[0], this.brush_pos[1])
+        const end_coords = this.getGraphCoordsFromMouse(this.mouse_pos[0], this.mouse_pos[1])
+        const pos1 = ld.clamp(start_coords.graph_relative_x, 0, this.graph_rect.width-1)
+        const pos2 = ld.clamp(end_coords.graph_relative_x, 0, this.graph_rect.width-1)
+        const start_pos = Math.min(pos1, pos2) + left
+        const end_pos = Math.max(pos1, pos2) + left
+        const width = Math.max(1, end_pos-start_pos)
+        ctx.fillStyle = "black"
+        ctx.globalAlpha = 0.2
+        ctx.fillRect(start_pos, top, width, bottom-top)
+        ctx.globalAlpha = 1.0
+
+    }
+
     mouseMove = (e: MouseEvent) => {
         this.mouse_pos = [e.clientX, e.clientY]
+    }
+
+    mouseLeave = (e: MouseEvent) => {
+        this.mouse_pos = [0, 0]
+    }
+
+    mouseDown = (e: MouseEvent) => {
+        const coords = this.getGraphCoordsFromMouse(e.clientX, e.clientY) 
+        if (!coords.outside_y) {
+            this.brush_pos = [e.clientX, e.clientY]
+        }
+    }
+
+    mouseUp = (e: MouseEvent) => {
+        this.brush_pos = null
     }
 
     componentDidMount() {
@@ -476,12 +526,18 @@ class PlotImpl extends Component<Props, State> {
         this.resize_observer.observe(this.x_axis_ref.current)
         this.resize_observer.observe(this.y_axis_ref.current)
         document.addEventListener("mousemove", this.mouseMove)
+        document.addEventListener("mouseleave", this.mouseLeave)
+        document.addEventListener("mousedown", this.mouseDown)
+        document.addEventListener("mouseup", this.mouseUp)
         requestAnimationFrame(() => this.animate())
     }
 
     componentWillUnmount() {
         this.resize_observer.disconnect()
         document.removeEventListener("mousemove", this.mouseMove)
+        document.removeEventListener("mouseleave", this.mouseLeave)
+        document.removeEventListener("mousedown", this.mouseDown)
+        document.removeEventListener("mouseup", this.mouseUp)
     }
 
     componentDidUpdate() {
