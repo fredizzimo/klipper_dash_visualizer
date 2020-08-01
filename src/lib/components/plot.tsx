@@ -311,7 +311,6 @@ class PlotImpl extends Component<Props, State> {
                 this.renderAxes(ctx)
                 this.renderCrosshair(ctx)
             }
-            ctx.restore()
         }
 
         requestAnimationFrame(() => this.animate())
@@ -438,6 +437,8 @@ class PlotImpl extends Component<Props, State> {
     renderCrosshair(ctx: CanvasRenderingContext2D) {
         const top = this.graph_rect.top
         const bottom = this.graph_rect.bottom
+        const left = this.graph_rect.left
+        const right = this.graph_rect.right
 
         const container_relative_x = this.mouse_pos[0] - this.container_rect.left
         const graph_relative_x = container_relative_x - this.graph_rect.left
@@ -450,11 +451,16 @@ class PlotImpl extends Component<Props, State> {
 
         ctx.lineWidth = this.getPixelLineWidth(1)
         ctx.strokeStyle = "black"
+        ctx.globalAlpha = 0.3
         ctx.beginPath()
         const x = this.getLinePosition(container_relative_x, ctx.lineWidth)
+        const y = this.getLinePosition(container_relative_y, ctx.lineWidth)
         ctx.moveTo(x, top)
         ctx.lineTo(x, bottom)
+        ctx.moveTo(left, y)
+        ctx.lineTo(right, y)
         ctx.stroke()
+        ctx.globalAlpha = 1
     }
 
     mouseMove = (e: MouseEvent) => {
