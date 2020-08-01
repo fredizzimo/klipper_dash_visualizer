@@ -83,6 +83,7 @@ export type PlotDef = {
 interface Props extends WithStyles<typeof styles>{
     plot: PlotDef
     selected_time: Array<number>
+    onTimeSelected : (time: Array<number>) => void;
 }
 
 type State = {
@@ -223,6 +224,20 @@ class PlotImpl extends Component<Props, State> {
         for (let i=0;i<this.y_scales.length;i++) {
             this.y_scales[i].range([height, 0]);
         }
+    }
+
+    commitBrush() {
+        const coord1 = this.getGraphCoordsFromMouse(this.mouse_pos[0], this.mouse_pos[1])
+        const coord2 = this.getGraphCoordsFromMouse(this.brush_pos[0], this.brush_pos[1])
+
+        const pos1 = ld.clamp(coord1.graph_relative_x, 0, this.graph_rect.width-1)
+        const pos2 = ld.clamp(coord2.graph_relative_x, 0, this.graph_rect.width-1)
+        const start = this.x_scale.invert(Math.min(pos1, pos2))
+        const end = this.x_scale.invert(Math.max(pos1, pos2))
+
+        this.props.onTimeSelected([start, end])
+
+        this.brush_pos = null
     }
 
 
@@ -503,7 +518,22 @@ class PlotImpl extends Component<Props, State> {
     }
 
     mouseLeave = (e: MouseEvent) => {
-        this.mouse_pos = [0, 0]
+        const left_dist = Math.abs(this.container_rect.left - this.mouse_pos[0])
+        const right_dist = Math.abs(this.container_rect.right - this.mouse_pos[0])
+        const top_dist = Math.abs(this.container_rect.top - this.mouse_pos[1])
+        const bottom_dist = Math.abs(this.container_rect.bottom - this.mouse_pos[1])
+        if (left_dist < right_dist) {
+            this.mouse_pos[0] = this.container_rect.left
+        }
+        else {
+            this.mouse_pos[0] = this.container_rect.right
+        }
+        if (top_dist < bottom_dist) {
+            this.mouse_pos[1] = this.container_rect.top
+        }
+        else {
+            this.mouse_pos[1] = this.container_rect.bottom
+        }
     }
 
     mouseDown = (e: MouseEvent) => {
@@ -514,7 +544,9 @@ class PlotImpl extends Component<Props, State> {
     }
 
     mouseUp = (e: MouseEvent) => {
-        this.brush_pos = null
+        if (this.brush_pos != null) {
+            this.commitBrush()
+        }
     }
 
     componentDidMount() {
