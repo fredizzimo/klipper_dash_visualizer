@@ -36,7 +36,7 @@ const styles = (theme: Theme) => createStyles({
         position: "relative",
         display: "grid",
         padding: "10px",
-        gridTemplateColumns: `100px 1fr`,
+        gridTemplateColumns: `120px 1fr`,
         gridTemplateRows: `500px ${axis_height}px`,
         gridTemplateAreas: ` 
             "yaxis   graph"
