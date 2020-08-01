@@ -86,10 +86,6 @@ interface Props extends WithStyles<typeof styles>{
 }
 
 type State = {
-    graph_width: number;
-    graph_height: number;
-    container_rect: DOMRectReadOnly;
-    selection_pos: number
 }
 
 class PlotImpl extends Component<Props, State> {
@@ -115,13 +111,17 @@ class PlotImpl extends Component<Props, State> {
     x_axis_ref = createRef<HTMLDivElement>()
     y_axis_ref = createRef<HTMLDivElement>()
 
+    container_rect: DOMRectReadOnly;
     x_axis_rect: DOMRectReadOnly
     y_axis_rect: DOMRectReadOnly
     graph_rect: DOMRectReadOnly
+    selection_pos: number
 
     series: any[]
 
     resize_observer: ResizeObserver
+
+    mouse_pos: number[] = [0, 0]
 
     constructor(props: Props) {
         super(props)
@@ -162,7 +162,7 @@ class PlotImpl extends Component<Props, State> {
             this.series[i] = series
         }
 
-        this.updateScales(this.state.graph_width, this.state.graph_height)
+        this.updateScales()
     }
 
     updateSelectedTime() {
@@ -210,10 +210,12 @@ class PlotImpl extends Component<Props, State> {
         return [range_low, range_high];
     }
 
-    updateScales(width: number, height: number) {
-        if (width == 0 || height == 0) {
-            return 
+    updateScales() {
+        if (this.graph_rect == null) {
+            return
         }
+        const width = this.graph_rect.width
+        const height = this.graph_rect.height
         this.x_scale.range([0, width]);
         for (let i=0;i<this.y_scales.length;i++) {
             this.y_scales[i].range([height, 0]);
@@ -233,8 +235,8 @@ class PlotImpl extends Component<Props, State> {
         for (let i=0;i<entries.length;i++) {
             const entry = entries[i]
             if (entry.target == this.graph_container_ref.current) {
-                this.graphCanvasResized(entry)
                 this.graph_rect = getRect(this.graph_container_ref.current, entry)
+                this.graphCanvasResized(entry)
             } else if(entry.target == this.container_ref.current) {
                 this.canvasResized(entry)
             } else if (entry.target == this.x_axis_ref.current) {
@@ -256,8 +258,7 @@ class PlotImpl extends Component<Props, State> {
         canvas.width = pixel_width
         canvas.height = pixel_height
         context.viewport(0, 0, pixel_width, pixel_height)
-        this.updateScales(width, height)
-        this.setState({graph_width: width, graph_height: height})
+        this.updateScales()
     }
 
     canvasResized = (entry: ResizeObserverEntry) => {
@@ -272,38 +273,45 @@ class PlotImpl extends Component<Props, State> {
         canvas.height = pixel_height
         const context = canvas.getContext("2d");
         context.scale(pixel_ratio, pixel_ratio)
-        this.setState({container_rect: rect})
+        this.container_rect = rect
     }
 
     getAxisFont(size: number) {
         return ` ${size}px ${axis_font}`
     }
 
-    renderCanvas() {
-        requestAnimationFrame(() => {
-            const canvas = this.graph_canvas_ref.current
-            const gl = canvas.getContext("webgl");
-            for (let i=0;i<this.series.length;i++) {
-                if (this.series[i].context() != gl) {
-                    this.series[i].context(gl)
-                }
-                this.series[i](this.props.plot.traces[i].data);
+    animate() {
+        if (this.graph_rect != null) {
+            this.renderCanvas()
+
+            const ctx = this.canvas_ref.current.getContext("2d")
+
+            const width = ctx.canvas.width
+            const height = ctx.canvas.height
+
+            ctx.clearRect(0, 0, width, height)
+
+            if (this.y_scales.length > 0) {
+                this.renderAxes(ctx)
+                this.renderCrosshair(ctx)
             }
-        })
+        }
+
+        requestAnimationFrame(() => this.animate())
+    }
+
+    renderCanvas() {
+        const canvas = this.graph_canvas_ref.current
+        const gl = canvas.getContext("webgl");
+        for (let i=0;i<this.series.length;i++) {
+            if (this.series[i].context() != gl) {
+                this.series[i].context(gl)
+            }
+            this.series[i](this.props.plot.traces[i].data);
+        }
     }
 
     renderAxes(ctx: CanvasRenderingContext2D) {
-        const width = ctx.canvas.width
-        const height = ctx.canvas.height
-
-        ctx.clearRect(0, 0, width, height)
-
-        if (this.y_scales.length == 0) {
-            return 
-        }
-        if (this.state.graph_width == 0 || this.state.graph_height==0) {
-            return
-        }
 
         this.renderXAxis(ctx)
         this.renderYAxis(ctx)
@@ -409,42 +417,28 @@ class PlotImpl extends Component<Props, State> {
     }
 
     renderCrosshair(ctx: CanvasRenderingContext2D) {
-        const left = this.graph_rect.left
         const top = this.graph_rect.top
         const bottom = this.graph_rect.bottom
-        const stroke_pos = left + this.state.selection_pos
-        if (this.state.selection_pos > 0 && this.state.selection_pos < this.graph_rect.width) {
-            ctx.lineWidth = 1
-            ctx.strokeStyle = "black"
-            ctx.beginPath()
-            ctx.moveTo(stroke_pos, top)
-            ctx.lineTo(stroke_pos, bottom)
-            ctx.stroke()
-        }
+
+        const container_relative_x = this.mouse_pos[0] - this.container_rect.left
+        const graph_relative_x = container_relative_x - this.graph_rect.left
+        const container_relative_y = this.mouse_pos[1] - this.container_rect.top
+        const graph_relative_y = container_relative_y - this.graph_rect.top
+        if (graph_relative_x <= 0 || graph_relative_x >= this.graph_rect.width)
+            return
+        if (graph_relative_y <= 0 || graph_relative_y >= this.graph_rect.height)
+            return
+
+        ctx.lineWidth = 1
+        ctx.strokeStyle = "black"
+        ctx.beginPath()
+        ctx.moveTo(container_relative_x, top)
+        ctx.lineTo(container_relative_x, bottom)
+        ctx.stroke()
     }
 
     mouseMove = (e: MouseEvent) => {
-        const container_rect = this.state.container_rect
-        if (container_rect.width > 0 && container_rect.height > 0) {
-            const x = e.clientX - container_rect.left
-            const y = e.clientY - container_rect.top
-            const graph_x = x - this.graph_rect.left
-            const graph_y = y - this.graph_rect.top
-            if (graph_y > 0 && graph_y < this.graph_rect.height) {
-                const selection_pos = ld.clamp(graph_x, 0, this.graph_rect.width)
-                this.setState( (prev_state: State) => {
-                    if (prev_state.selection_pos != selection_pos) {
-                        return {selection_pos}
-                    }
-                })
-            } else {
-                this.setState( (prev_state: State) => {
-                    if (prev_state.selection_pos != 0) {
-                        return {selection_pos: 0}
-                    }
-                })
-            }
-        }
+        this.mouse_pos = [e.clientX, e.clientY]
     }
 
     componentDidMount() {
@@ -456,6 +450,7 @@ class PlotImpl extends Component<Props, State> {
         this.resize_observer.observe(this.x_axis_ref.current)
         this.resize_observer.observe(this.y_axis_ref.current)
         document.addEventListener("mousemove", this.mouseMove)
+        requestAnimationFrame(() => this.animate())
     }
 
     componentWillUnmount() {
@@ -464,12 +459,6 @@ class PlotImpl extends Component<Props, State> {
     }
 
     componentDidUpdate() {
-        requestAnimationFrame(() => {
-            const ctx = this.canvas_ref.current.getContext("2d")
-            this.renderCanvas()
-            this.renderAxes(ctx)
-            this.renderCrosshair(ctx)
-        })
     }
 
     render() {
@@ -479,8 +468,6 @@ class PlotImpl extends Component<Props, State> {
         if (this.selected_time != this.props.selected_time) {
             this.updateSelectedTime()
         }
-
-        console.log(this.state.selection_pos)
 
         const styles = this.props.classes
 
