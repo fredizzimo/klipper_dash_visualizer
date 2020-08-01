@@ -123,6 +123,8 @@ class PlotImpl extends Component<Props, State> {
 
     mouse_pos: number[] = [0, 0]
 
+    pixel_ratio: number
+
     constructor(props: Props) {
         super(props)
         this.state = {
@@ -280,6 +282,19 @@ class PlotImpl extends Component<Props, State> {
         return ` ${size}px ${axis_font}`
     }
 
+    getPixelLineWidth(width: number) {
+        return Math.max(1, Math.round(width*this.pixel_ratio) / this.pixel_ratio)
+    }
+
+    getLinePosition(pos: number, line_width: number) {
+        const device_pos = pos*this.pixel_ratio
+        const device_line_width = line_width * this.pixel_ratio
+        let line_start = device_pos - device_line_width*0.5 
+        line_start = Math.round(line_start) / this.pixel_ratio
+        const line_mid = line_start + line_width*0.5
+        return line_mid
+    }
+
     animate() {
         if (this.graph_rect != null) {
             this.renderCanvas()
@@ -290,11 +305,13 @@ class PlotImpl extends Component<Props, State> {
             const height = ctx.canvas.height
 
             ctx.clearRect(0, 0, width, height)
+            this.pixel_ratio = window.devicePixelRatio
 
             if (this.y_scales.length > 0) {
                 this.renderAxes(ctx)
                 this.renderCrosshair(ctx)
             }
+            ctx.restore()
         }
 
         requestAnimationFrame(() => this.animate())
@@ -307,6 +324,7 @@ class PlotImpl extends Component<Props, State> {
             if (this.series[i].context() != gl) {
                 this.series[i].context(gl)
             }
+            this.series[i].lineWidth(this.pixel_ratio)
             this.series[i](this.props.plot.traces[i].data);
         }
     }
@@ -323,26 +341,26 @@ class PlotImpl extends Component<Props, State> {
 
         const tick_line_end = vertical ? position - axis_tick_size : position + axis_tick_size
 
-        ctx.lineWidth = 1
+        ctx.lineWidth = this.getPixelLineWidth(1)
         ctx.strokeStyle = "black"
 
         const range_start = range[0] + offset
         const range_end = range[1] + offset
 
+        const pixel_pos = this.getLinePosition(position, ctx.lineWidth)
 
         ctx.beginPath()
         if (vertical) {
-            ctx.moveTo(position, range_start)
-            ctx.lineTo(position, range_end)
+            ctx.moveTo(pixel_pos, range_start)
+            ctx.lineTo(pixel_pos, range_end)
         }
         else {
-            ctx.moveTo(range_start, position)
-            ctx.lineTo(range_end, position)
-
+            ctx.moveTo(range_start, pixel_pos)
+            ctx.lineTo(range_end, pixel_pos)
         }
 
         for (let i=0;i<ticks_pos.length; i++) {
-            const tick_pos = ticks_pos[i] + offset
+            const tick_pos = this.getLinePosition(ticks_pos[i] + offset, ctx.lineWidth)
             if (vertical) {
                 ctx.moveTo(tick_line_end, tick_pos)
                 ctx.lineTo(position, tick_pos)
@@ -365,6 +383,7 @@ class PlotImpl extends Component<Props, State> {
         ctx.textAlign = "center"
         ctx.textBaseline = "top"
         ctx.fillStyle = "black"
+        ctx.font = this.getAxisFont(axis_font_size)
         const tick_format = scale.tickFormat(y_axis_ticks)
         const labels = ld.map(ticks, (tick: number) => tick_format(tick))
         const y_pos = top + axis_tick_size + axis_tick_padding
@@ -429,11 +448,12 @@ class PlotImpl extends Component<Props, State> {
         if (graph_relative_y <= 0 || graph_relative_y >= this.graph_rect.height)
             return
 
-        ctx.lineWidth = 1
+        ctx.lineWidth = this.getPixelLineWidth(1)
         ctx.strokeStyle = "black"
         ctx.beginPath()
-        ctx.moveTo(container_relative_x, top)
-        ctx.lineTo(container_relative_x, bottom)
+        const x = this.getLinePosition(container_relative_x, ctx.lineWidth)
+        ctx.moveTo(x, top)
+        ctx.lineTo(x, bottom)
         ctx.stroke()
     }
 
