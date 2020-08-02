@@ -344,6 +344,8 @@ class PlotImpl extends Component<Props, State> {
 
     animate() {
         if (this.graph_rect != null) {
+
+            this.container_rect = this.container_ref.current.getBoundingClientRect()
             this.renderCanvas()
 
             const ctx = this.canvas_ref.current.getContext("2d")
@@ -533,9 +535,8 @@ class PlotImpl extends Component<Props, State> {
     }
 
     mouseLeave = (e: MouseEvent) => {
-        if (this.container_rect == null) {
-            return
-        }
+        this.container_rect = this.container_ref.current.getBoundingClientRect()
+
         const left_dist = Math.abs(this.container_rect.left - this.mouse_pos[0])
         const right_dist = Math.abs(this.container_rect.right - this.mouse_pos[0])
         const top_dist = Math.abs(this.container_rect.top - this.mouse_pos[1])
@@ -555,6 +556,8 @@ class PlotImpl extends Component<Props, State> {
     }
 
     mouseDown = (e: MouseEvent) => {
+        this.container_rect = this.container_ref.current.getBoundingClientRect()
+
         const click_delay = 500
         const minimum_click_move_distance = 10
 
@@ -606,6 +609,8 @@ class PlotImpl extends Component<Props, State> {
     }
 
     mouseUp = (e: MouseEvent) => {
+        this.container_rect = this.container_ref.current.getBoundingClientRect()
+
         this.mouse_pos = [e.clientX, e.clientY]
         this.mouse_up_pos = [e.clientX, e.clientY]
         if (this.num_clicks == 0 && this.brush_pos != null) {
