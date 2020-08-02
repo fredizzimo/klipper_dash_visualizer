@@ -85,8 +85,9 @@ export type PlotDef = {
 interface Props extends WithStyles<typeof styles>{
     plot: PlotDef
     selected_time: Array<number>
-    min_max_time: Array<number>
-    onTimeSelected : (time: Array<number>) => void;
+    onTimeSelected : (time: Array<number>, add_undo: boolean) => void
+    reset: () => void
+    undo: () => void
 }
 
 type State = {
@@ -133,8 +134,6 @@ class PlotImpl extends Component<Props, State> {
 
     pixel_ratio: number
 
-    zoom_history: number[][] = []
-
     constructor(props: Props) {
         super(props)
         this.state = {
@@ -148,7 +147,6 @@ class PlotImpl extends Component<Props, State> {
     initialize_plot() {
         const props = this.props
         const traces = props.plot.traces
-        this.zoom_history = []
         this.plot = props.plot
         this.selected_time = null
         this.series = new Array(traces.length)
@@ -236,11 +234,6 @@ class PlotImpl extends Component<Props, State> {
     }
 
     commitBrush() {
-        if (this.zoom_history.length > 10) {
-            this.zoom_history.pop()
-        }
-        this.zoom_history.push([...this.props.selected_time])
-        
         const coord1 = this.getGraphCoordsFromMouse(this.mouse_pos[0], this.mouse_pos[1])
         const coord2 = this.getGraphCoordsFromMouse(this.brush_pos[0], this.brush_pos[1])
 
@@ -249,7 +242,7 @@ class PlotImpl extends Component<Props, State> {
         const start = this.x_scale.invert(Math.min(pos1, pos2))
         const end = this.x_scale.invert(Math.max(pos1, pos2))
 
-        this.props.onTimeSelected([start, end])
+        this.props.onTimeSelected([start, end], true)
 
         this.brush_pos = null
 
@@ -572,19 +565,12 @@ class PlotImpl extends Component<Props, State> {
             if (this.num_clicks == 3) {
                 this.brush_pos = null
                 this.num_clicks = 0
-                this.zoom_history = []
-                this.props.onTimeSelected([...this.props.min_max_time])
+                this.props.reset()
             }
             else {
                 if (this.num_clicks == 2) {
                     this.brush_pos = null
-                    if (this.zoom_history.length > 0) {
-                        const time = this.zoom_history.pop()
-                        this.props.onTimeSelected(time)
-
-                    } else {
-                        this.props.onTimeSelected([...this.props.min_max_time])
-                    }
+                    this.props.undo()
                 }
                 else if (this.brush_pos == null) {
                     this.brush_pos = [e.clientX, e.clientY]

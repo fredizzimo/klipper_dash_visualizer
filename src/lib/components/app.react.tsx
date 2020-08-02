@@ -50,6 +50,8 @@ type State =
 
 const App = withStyles(styles)(
     class extends Component<Props, State> {
+        undo_history: number[][] = []
+
         constructor(props: Props) {
             super(props);
             const min_max_time = get_min_max(this.props.times, 0, this.props.times.length)
@@ -72,8 +74,26 @@ const App = withStyles(styles)(
             this.setState({activeTab: tab})
         }
 
-        onTimeSelected=(time: Array<number>)=> {
+        onTimeSelected=(time: Array<number>, add_undo?: boolean)=> {
+            if (add_undo) {
+                if (this.undo_history.length > 10) {
+                    this.undo_history.pop()
+                }
+                this.undo_history.push([...this.state.selected_time])
+            }
             this.setState({selected_time: time})
+        }
+
+        undo = () => {
+            if (this.undo_history.length > 0) {
+                const time = this.undo_history.pop()
+                this.setState({selected_time: [...time]})
+            }
+        }
+
+        reset = () => {
+            this.undo_history = []
+            this.setState({selected_time: [...this.state.min_max_time]})
         }
 
         render() {
@@ -106,8 +126,9 @@ const App = withStyles(styles)(
                                 return <Plot 
                                     plot={plot}
                                     selected_time={this.state.selected_time}
-                                    min_max_time={this.state.min_max_time}
                                     onTimeSelected={this.onTimeSelected}
+                                    undo={this.undo}
+                                    reset={this.reset} 
                                 />
                             })}
                         </TabPanel>
