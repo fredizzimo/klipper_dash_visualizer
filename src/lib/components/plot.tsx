@@ -1,7 +1,7 @@
 import React, { FunctionComponent, useEffect, useRef, useState, useCallback, Component, createRef } from "react";
 import * as fc from "d3fc"
 import * as d3 from "d3" 
-import { Theme, makeStyles } from "@material-ui/core";
+import { Theme, makeStyles, Typography } from "@material-ui/core";
 import { WithStyles, withStyles, useTheme, createStyles } from "@material-ui/styles";
 import * as ld from "lodash"
 import {range_start, range_end, get_min_max} from "../helpers"
@@ -40,10 +40,12 @@ const styles = (theme: Theme) => createStyles({
         padding: "10px",
         userSelect: "none", // Prevent selection on double click
         gridTemplateColumns: `120px 1fr`,
-        gridTemplateRows: `500px ${axis_height}px`,
+        gridTemplateRows: `auto auto 500px ${axis_height}px`,
         gridTemplateAreas: ` 
-            "yaxis   graph"
-            ".       xaxis"
+            "title  title"
+            "legend legend"
+            "yaxis  graph"
+            ".      xaxis"
         `
     },
     canvas: {
@@ -51,6 +53,21 @@ const styles = (theme: Theme) => createStyles({
         height: "100%",
         width: "100%",
         zIndex: 1
+    },
+    legend_container: {
+        gridArea: "legend",
+        display: "flex",
+        flexDirection: "row"
+    },
+    legend_item: {
+        padding: "0em 1em 1em 1em",
+        ...theme.typography.body2
+    },
+    title: {
+        gridArea: "title",
+        padding: "0em 0em 0.5em 0em",
+        textAlign: "center",
+        ...theme.typography.h4
     },
     graph: {
         gridArea: "graph",
@@ -646,6 +663,20 @@ class PlotImpl extends Component<Props, State> {
         return (
             <div>
                 <div className={styles.grid} ref={this.container_ref}>
+                    <div className={styles.title}>
+                        {this.props.plot.name}
+                    </div>
+                    <div className={styles.legend_container}>
+                        {this.props.plot.traces.map((trace, i) => {
+                            const color = trace_colors[i].hex()
+                            return <div
+                                className={styles.legend_item}
+                                style={{color: color}}
+                            >
+                                {trace.name}
+                            </div>
+                        })}
+                    </div>
                     <div className={styles.graph} ref={this.graph_container_ref}>
                         <canvas ref={this.graph_canvas_ref}/>
                     </div>
