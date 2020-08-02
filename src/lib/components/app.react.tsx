@@ -97,22 +97,19 @@ const App = withStyles(styles)(
                                 />
                             </Tabs>
                         </AppBar>
-                        <RangeSelect
-                            selected_time={this.state.selected_time}
-                            min_max_time={this.state.min_max_time}
-                            onTimeSelected={this.onTimeSelected}
-                        />
                         <TabPanel
                             className={this.props.classes.tab_panel}
                             index={this.state.activeTab}
                             value="graphs"
                         >
-                            <Plot 
-                                plot={this.props.plots[0]}
-                                selected_time={this.state.selected_time}
-                                min_max_time={this.state.min_max_time}
-                                onTimeSelected={this.onTimeSelected}
-                            />
+                            {this.props.plots.map(plot => {
+                                return <Plot 
+                                    plot={plot}
+                                    selected_time={this.state.selected_time}
+                                    min_max_time={this.state.min_max_time}
+                                    onTimeSelected={this.onTimeSelected}
+                                />
+                            })}
                         </TabPanel>
                         <TabPanel
                             className={this.props.classes.tab_panel}
