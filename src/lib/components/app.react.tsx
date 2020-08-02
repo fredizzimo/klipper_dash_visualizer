@@ -3,7 +3,6 @@ import KlipperDashRenderer from './klipper_dash_renderer.react';
 import {get_min_max} from "../helpers"
 import { Tab, Tabs, AppBar, Box, Theme, createStyles, WithStyles, withStyles, ThemeProvider, createMuiTheme } from "@material-ui/core";
 import { TabPanel } from "./tabs.react"
-import { RangeSelect } from "./range_select"
 import { Plot, PlotDef } from "./plot"
 
 const styles = (theme: Theme) => createStyles({

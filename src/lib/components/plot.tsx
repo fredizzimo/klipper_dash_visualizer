@@ -1,14 +1,11 @@
 import React, { FunctionComponent, useEffect, useRef, useState, useCallback, Component, createRef } from "react";
 import * as fc from "d3fc"
 import * as d3 from "d3" 
-import { Theme, makeStyles, Typography } from "@material-ui/core";
-import { WithStyles, withStyles, useTheme, createStyles } from "@material-ui/styles";
+import { Theme } from "@material-ui/core";
+import { WithStyles, withStyles, createStyles } from "@material-ui/styles";
 import * as ld from "lodash"
 import {range_start, range_end, get_min_max} from "../helpers"
 import {scaleLinearFixedTicks, ScaleLinearFixedTicks} from "../linear_fixed_ticks_scale"
-import { Axis, text, ScaleLinear } from "d3";
-import zIndex from "@material-ui/core/styles/zIndex";
-import { newPlot } from "plotly.js";
 
 const axis_font_size = 10
 const axis_font = "sans-serif"
