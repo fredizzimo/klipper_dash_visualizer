@@ -110,6 +110,7 @@ const App = withStyles(styles)(
                             <Plot 
                                 plot={this.props.plots[0]}
                                 selected_time={this.state.selected_time}
+                                min_max_time={this.state.min_max_time}
                                 onTimeSelected={this.onTimeSelected}
                             />
                         </TabPanel>

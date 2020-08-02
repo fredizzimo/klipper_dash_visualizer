@@ -8,6 +8,7 @@ import {range_start, range_end, get_min_max} from "../helpers"
 import {scaleLinearFixedTicks, ScaleLinearFixedTicks} from "../linear_fixed_ticks_scale"
 import { Axis, text, ScaleLinear } from "d3";
 import zIndex from "@material-ui/core/styles/zIndex";
+import { newPlot } from "plotly.js";
 
 const axis_font_size = 10
 const axis_font = "sans-serif"
@@ -83,6 +84,7 @@ export type PlotDef = {
 interface Props extends WithStyles<typeof styles>{
     plot: PlotDef
     selected_time: Array<number>
+    min_max_time: Array<number>
     onTimeSelected : (time: Array<number>) => void;
 }
 
@@ -124,8 +126,13 @@ class PlotImpl extends Component<Props, State> {
 
     mouse_pos: number[] = [0, 0]
     brush_pos: number[] = null
+    mouse_up_pos: number[] = null
+    click_timer: number
+    num_clicks = 0
 
     pixel_ratio: number
+
+    zoom_history: number[][] = []
 
     constructor(props: Props) {
         super(props)
@@ -140,6 +147,7 @@ class PlotImpl extends Component<Props, State> {
     initialize_plot() {
         const props = this.props
         const traces = props.plot.traces
+        this.zoom_history = []
         this.plot = props.plot
         this.selected_time = null
         this.series = new Array(traces.length)
@@ -227,6 +235,11 @@ class PlotImpl extends Component<Props, State> {
     }
 
     commitBrush() {
+        if (this.zoom_history.length > 10) {
+            this.zoom_history.pop()
+        }
+        this.zoom_history.push([...this.props.selected_time])
+        
         const coord1 = this.getGraphCoordsFromMouse(this.mouse_pos[0], this.mouse_pos[1])
         const coord2 = this.getGraphCoordsFromMouse(this.brush_pos[0], this.brush_pos[1])
 
@@ -238,6 +251,7 @@ class PlotImpl extends Component<Props, State> {
         this.props.onTimeSelected([start, end])
 
         this.brush_pos = null
+
     }
 
 
@@ -341,7 +355,7 @@ class PlotImpl extends Component<Props, State> {
 
             if (this.y_scales.length > 0) {
                 this.renderAxes(ctx)
-                if (this.brush_pos != null) {
+                if (this.brush_pos != null && this.mouse_up_pos == null) {
                     this.renderBrushing(ctx)
                 } else {
                     this.renderCrosshair(ctx)
@@ -537,14 +551,60 @@ class PlotImpl extends Component<Props, State> {
     }
 
     mouseDown = (e: MouseEvent) => {
+        const click_delay = 500
+        const minimum_click_move_distance = 10
+
+        this.mouse_pos = [e.clientX, e.clientY]
         const coords = this.getGraphCoordsFromMouse(e.clientX, e.clientY) 
+        if (this.click_timer != null) {
+            window.clearTimeout(this.click_timer)
+        }
+        this.mouse_up_pos = null
         if (!coords.outside_y) {
-            this.brush_pos = [e.clientX, e.clientY]
+            this.num_clicks++
+            if (this.num_clicks == 3) {
+                this.brush_pos = null
+                this.num_clicks = 0
+                this.zoom_history = []
+                this.props.onTimeSelected([...this.props.min_max_time])
+            }
+            else {
+                if (this.num_clicks == 2) {
+                    this.brush_pos = null
+                    if (this.zoom_history.length > 0) {
+                        const time = this.zoom_history.pop()
+                        this.props.onTimeSelected(time)
+
+                    } else {
+                        this.props.onTimeSelected([...this.props.min_max_time])
+                    }
+                }
+                else if (this.brush_pos == null) {
+                    this.brush_pos = [e.clientX, e.clientY]
+                }
+
+                this.click_timer = window.setTimeout(() => {
+                    if (this.mouse_up_pos != null) {
+                        if (this.brush_pos != null) {
+                            if (Math.abs(this.brush_pos[0] - this.mouse_up_pos[0]) > minimum_click_move_distance) {
+                                this.mouse_pos = this.mouse_up_pos
+                                this.commitBrush()
+                            }
+                        }
+                        this.brush_pos = null
+                    }
+                    this.num_clicks = 0
+                }, click_delay)
+            }
+        } else {
+            this.num_clicks = 0
         }
     }
 
     mouseUp = (e: MouseEvent) => {
-        if (this.brush_pos != null) {
+        this.mouse_pos = [e.clientX, e.clientY]
+        this.mouse_up_pos = [e.clientX, e.clientY]
+        if (this.num_clicks == 0 && this.brush_pos != null) {
             this.commitBrush()
         }
     }
@@ -570,6 +630,9 @@ class PlotImpl extends Component<Props, State> {
         document.removeEventListener("mouseleave", this.mouseLeave)
         document.removeEventListener("mousedown", this.mouseDown)
         document.removeEventListener("mouseup", this.mouseUp)
+        if (this.click_timer != null) {
+            window.clearTimeout(this.click_timer)
+        }
     }
 
     componentDidUpdate() {
