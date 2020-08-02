@@ -1,4 +1,4 @@
-import React, {Component, Children} from "react";
+import React from "react";
 
 interface TabPanelProps {
     className: string;
