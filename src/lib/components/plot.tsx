@@ -38,6 +38,7 @@ const styles = (theme: Theme) => createStyles({
         position: "relative",
         display: "grid",
         padding: "10px",
+        userSelect: "none", // Prevent selection on double click
         gridTemplateColumns: `120px 1fr`,
         gridTemplateRows: `500px ${axis_height}px`,
         gridTemplateAreas: ` 
@@ -532,6 +533,9 @@ class PlotImpl extends Component<Props, State> {
     }
 
     mouseLeave = (e: MouseEvent) => {
+        if (this.container_rect == null) {
+            return
+        }
         const left_dist = Math.abs(this.container_rect.left - this.mouse_pos[0])
         const right_dist = Math.abs(this.container_rect.right - this.mouse_pos[0])
         const top_dist = Math.abs(this.container_rect.top - this.mouse_pos[1])
