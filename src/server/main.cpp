@@ -1,37 +1,38 @@
 #include <iostream>
 #include <string>
-#include <cxxopts.hpp>
+#include "config.h"
+#include <argparse/argparse.hpp>
 #include "parser.hpp"
 
 int main(int argc, char* argv[])
 {
-
-    cxxopts::Options options("klipper_dash_visualizer", "Server for visualizing klipper serial output logs");
-    options.add_options()
-        ("h,help", "Print usage")
-        ("d,dict", "Dictionary file to use", cxxopts::value<std::string>());
+    argparse::ArgumentParser argParser(PROJECT_NAME);
+    argParser.add_argument("-d", "--dict")
+        .required()
+        .help("Path to the dictionary file")
     ;
+    argParser.add_argument("input")
+        .required()
+        .help("Path to the input serial port dump file")
+    ;
+
     try
     {
-        auto result = options.parse(argc, argv);
-        if (result.count("help"))
-        {
-            std::cout << options.help() << std::endl;
-            exit(0);
-        }
-        
-        auto parser = Parser(result["dict"].as<std::string>());
-    }
-    catch (cxxopts::OptionException e)
-    {
-        std::cout << e.what() << std::endl << std::endl;
-        std::cout << options.help() << std::endl;
-        return -1;
+        argParser.parse_args(argc, argv);
+        std::string dictFile = argParser.get<std::string>("--dict");
+        std::string serialFile = argParser.get<std::string>("input");
+        auto parser = Parser(dictFile);
+        parser.parse(serialFile);
     }
     catch (ParserError e)
     {
         std::cout << "Error: " << e.what() << std::endl;
         return -1;
     }
-    
+    catch(std::runtime_error& err)
+    {
+        std::cout << err.what();
+        std::cout << argParser;
+        return -1;
+    }
 }

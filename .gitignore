@@ -289,3 +289,4 @@ klipper_dash_visualizer/package-info.json
 klipper_dash_visualizer/assets/roboto-*
 NAMESPACE
 DESCRIPTION
+src/server/config.h
