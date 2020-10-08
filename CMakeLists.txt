@@ -9,7 +9,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_library(klipper_dash_visualizer_lib STATIC)
-target_sources(klipper_dash_visualizer_lib PRIVATE src/server/parser.cpp)
+target_sources(klipper_dash_visualizer_lib PRIVATE
+  src/server/parser.cpp
+  src/server/pin_resolver.cpp
+)
+target_include_directories(klipper_dash_visualizer_lib PUBLIC src/server/)
 
 find_package(argparse REQUIRED)
 find_package(nlohmann_json 3.9.0 REQUIRED)
@@ -23,6 +27,6 @@ target_link_libraries(klipper_dash_visualizer klipper_dash_visualizer_lib)
 
 add_subdirectory(external/gtest)
 
-add_executable(test_server src/server/test/dummy.cpp)
+add_executable(test_server src/server/test/test_pin_resolver.cpp)
 target_link_libraries(test_server gtest_main klipper_dash_visualizer_lib)
 add_test(NAME test COMMAND test_server)
