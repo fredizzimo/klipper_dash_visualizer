@@ -8,12 +8,21 @@ configure_file(src/server/config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/src/server/con
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-add_executable(klipper_dash_visualizer src/server/main.cpp)
-target_sources(klipper_dash_visualizer PRIVATE src/server/parser.cpp)
+add_library(klipper_dash_visualizer_lib STATIC)
+target_sources(klipper_dash_visualizer_lib PRIVATE src/server/parser.cpp)
 
 find_package(argparse REQUIRED)
 find_package(nlohmann_json 3.9.0 REQUIRED)
 find_package(ZLIB 1.2.0 REQUIRED)
 
-target_link_libraries(klipper_dash_visualizer PRIVATE nlohmann_json::nlohmann_json)
-target_link_libraries(klipper_dash_visualizer PRIVATE ZLIB::ZLIB)
+target_link_libraries(klipper_dash_visualizer_lib PRIVATE nlohmann_json::nlohmann_json)
+target_link_libraries(klipper_dash_visualizer_lib PRIVATE ZLIB::ZLIB)
+
+add_executable(klipper_dash_visualizer src/server/main.cpp)
+target_link_libraries(klipper_dash_visualizer klipper_dash_visualizer_lib)
+
+add_subdirectory(external/gtest)
+
+add_executable(test_server src/server/test/dummy.cpp)
+target_link_libraries(test_server gtest_main klipper_dash_visualizer_lib)
+add_test(NAME test COMMAND test_server)
