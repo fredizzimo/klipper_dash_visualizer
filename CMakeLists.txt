@@ -12,21 +12,29 @@ add_library(klipper_dash_visualizer_lib STATIC)
 target_sources(klipper_dash_visualizer_lib PRIVATE
   src/server/parser.cpp
   src/server/pin_resolver.cpp
+  src/server/config_parser.cpp
 )
 target_include_directories(klipper_dash_visualizer_lib PUBLIC src/server/)
 
+find_package(PkgConfig)
 find_package(argparse REQUIRED)
 find_package(nlohmann_json 3.9.0 REQUIRED)
 find_package(ZLIB 1.2.0 REQUIRED)
 
+add_subdirectory(external/inih)
+
 target_link_libraries(klipper_dash_visualizer_lib PRIVATE nlohmann_json::nlohmann_json)
 target_link_libraries(klipper_dash_visualizer_lib PRIVATE ZLIB::ZLIB)
+target_link_libraries(klipper_dash_visualizer_lib PRIVATE inih)
 
 add_executable(klipper_dash_visualizer src/server/main.cpp)
 target_link_libraries(klipper_dash_visualizer klipper_dash_visualizer_lib)
 
 add_subdirectory(external/gtest)
 
-add_executable(test_server src/server/test/test_pin_resolver.cpp)
-target_link_libraries(test_server gtest_main klipper_dash_visualizer_lib)
+add_executable(test_server
+  src/server/test/test_pin_resolver.cpp
+  src/server/test/test_config_parser.cpp
+)
+target_link_libraries(test_server gtest_main gmock klipper_dash_visualizer_lib)
 add_test(NAME test COMMAND test_server)

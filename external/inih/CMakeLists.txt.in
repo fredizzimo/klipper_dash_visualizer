@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 2.8.2)
+
+project(inih-download NONE)
+
+include(ExternalProject)
+ExternalProject_Add(inih
+  GIT_REPOSITORY    https://github.com/benhoyt/inih.git
+  GIT_TAG           r51
+  SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/inih-src"
+  BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/inih-build"
+  CONFIGURE_COMMAND ""
+  BUILD_COMMAND     ""
+  INSTALL_COMMAND   ""
+  TEST_COMMAND      ""
+)
