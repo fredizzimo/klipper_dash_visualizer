@@ -1,17 +1,75 @@
 #include "parser.hpp"
+#include "config_parser.hpp"
+#include "kinematics.hpp"
+#include "cartesian.hpp"
+#include "parser_error.hpp"
 #include <zlib.h>
 #include <vector>
 #include <string_view>
+#include <filesystem>
 #include <nlohmann/json.hpp>
 
 #include <iostream>
 
 using json = nlohmann::json;
 
-Parser::Parser(const std::string& dictionary)
-    :  m_dictionary(dictionary)
+namespace
 {
-    auto dict = gzopen(dictionary.c_str(), "rb");
+    class ConfigFileReader : public ConfigParser::IFileReader
+    {
+    public:
+        virtual void readFile(const std::string& filename, const std::string& parent_filename, std::function<void (const char* buffer)> callback)
+        {
+            std::filesystem::path full_filename = parent_filename;
+            full_filename.remove_filename();
+            full_filename /= filename;
+            auto f = fopen(full_filename.c_str(), "r");
+            if (!f)
+            {
+                char* err = strerror(errno);
+                throw ParserError("Could not open the config file %s: %s\n", full_filename.c_str(), err);
+            }
+            fseek(f, 0, SEEK_END);
+            auto size = ftell(f);
+            fseek(f, 0, SEEK_SET);
+            char* buffer = new char[size];
+            fread(buffer, 1, size, f);
+            fclose(f);
+            callback(buffer);
+            delete [] buffer;
+        }
+    };
+}
+
+Parser::Parser(const std::string& config, const std::string& dictionary)
+{
+    loadDict(dictionary);
+    loadConfig(config);
+}
+
+Parser::~Parser()
+{
+}
+
+void Parser::loadConfig(const std::string& filename)
+{
+
+    ConfigFileReader file_reader;
+    ConfigParser parser(filename, file_reader);
+    std::string kinematics = parser.get<std::string>("printer", "kinematics");
+    if (kinematics == "cartesian")
+    {
+        m_kinematics = std::make_unique<Cartesian>();
+    }
+    else
+    {
+        throw ParserError("Only cartesian kinematics supported at the moment");
+    }
+}
+
+void Parser::loadDict(const std::string& filename)
+{
+    auto dict = gzopen(filename.c_str(), "rb");
     if (dict)
     {
         std::vector<char> buffer;
@@ -30,7 +88,7 @@ Parser::Parser(const std::string& dictionary)
                 }
                 else if (read == -1)
                 {
-                    throw ParserError("Failed to decompress. The dictionary file %s appears to be corrupted", dictionary.c_str());
+                    throw ParserError("Failed to decompress. The dictionary file %s appears to be corrupted", filename.c_str());
                 }
                 break;
             }
@@ -39,20 +97,21 @@ Parser::Parser(const std::string& dictionary)
         try
         {
             auto j = json::parse(buffer.begin(), buffer.end());
-            #if 0
+            #if 1
                 std::cout << j.dump(4);
                 std::cout << std::endl;
             #endif
             generateCommands(j);
+            m_pin_resolver = std::make_unique<PinResolver>(j);
         }
         catch (json::exception e)
         {
-            throw ParserError("Failed to load json. The dictionary file %s appears to be corrupted", dictionary.c_str());
+            throw ParserError("Failed to load json. The dictionary file %s appears to be corrupted", filename.c_str());
         }
     }
     else
     {
-        throw ParserError("Could not open dictionary file %s", dictionary.c_str());
+        throw ParserError("Could not open dictionary file %s", filename.c_str());
     }
 }
 
@@ -124,7 +183,7 @@ namespace
     constexpr uint8_t MESSAGE_DEST = 0x10;
     constexpr uint8_t MESSAGE_SYNC = '\x7E';
 
-    class FileReader
+    class SerialFileReader
     {
     public:
         class EndOfFile : public std::exception
@@ -134,7 +193,7 @@ namespace
             bool m_error;
         };
 
-        FileReader(const std::string& filename)
+        SerialFileReader(const std::string& filename)
         {
             m_file = fopen(filename.c_str(), "rb");
             if (!m_file)
@@ -143,7 +202,7 @@ namespace
                 throw ParserError("Could not open serial input file %s: %s\n", filename.c_str(), err);
             }
         }
-        ~FileReader()
+        ~SerialFileReader()
         {
             fclose(m_file);
         }
@@ -281,7 +340,7 @@ namespace
 
 void Parser::parse(const std::string& filename)
 {
-    FileReader reader(filename);
+    SerialFileReader reader(filename);
     try
     {
         while (true)
@@ -294,7 +353,7 @@ void Parser::parse(const std::string& filename)
             message += MESSAGE_HEADER_SIZE;
             while (message < end)
             {
-                #if 1
+                #if 0
                     readCommand(message);
                 #else
                     printCommand(message);
@@ -302,7 +361,7 @@ void Parser::parse(const std::string& filename)
             }
         }
     }
-    catch(FileReader::EndOfFile& eof)
+    catch(SerialFileReader::EndOfFile& eof)
     {
         if (eof.m_error)
         {

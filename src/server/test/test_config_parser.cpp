@@ -10,15 +10,15 @@ namespace
     class MockFileReader : public ConfigParser::IFileReader
     {
     public:
-        MOCK_METHOD(void, readFile, (const std::string& filename, Callback callback), (override));
+        MOCK_METHOD(void, readFile, (const std::string& filename, const std::string& parent_filename, Callback callback), (override));
     };
 }
 
 TEST(ConfigParser, EmptyConfig)
 {
     MockFileReader fileReader;
-    EXPECT_CALL(fileReader, readFile("afile.ini", _))
-        .WillOnce([](const std::string& filename, Callback callback)
+    EXPECT_CALL(fileReader, readFile("afile.ini", "", _))
+        .WillOnce([](const std::string& filename, const std::string& parent_filename, Callback callback)
         {
             callback("");
         });
@@ -44,8 +44,8 @@ CamelCaseValue = Hello World
 
 )";
     MockFileReader fileReader;
-    EXPECT_CALL(fileReader, readFile("afile.ini", _))
-        .WillOnce([config](const std::string& filename, Callback callback)
+    EXPECT_CALL(fileReader, readFile("afile.ini", "", _))
+        .WillOnce([config](const std::string& filename, const std::string& parent_filename, Callback callback)
         {
             callback(config);
         });
@@ -84,13 +84,13 @@ auto config2 = R"(
 avalue=myvalue2
 )";
     MockFileReader fileReader;
-    EXPECT_CALL(fileReader, readFile("afile.ini", _))
-        .WillOnce([config](const std::string& filename, Callback callback)
+    EXPECT_CALL(fileReader, readFile("afile.ini", "", _))
+        .WillOnce([config](const std::string& filename, const std::string& parent_filename, Callback callback)
         {
             callback(config);
         });
-    EXPECT_CALL(fileReader, readFile("Path/to/Config2.ini", _))
-        .WillOnce([config2](const std::string& filename, Callback callback)
+    EXPECT_CALL(fileReader, readFile("Path/to/Config2.ini", "afile.ini", _))
+        .WillOnce([config2](const std::string& filename, const std::string& parent_filename, Callback callback)
         {
             callback(config2);
         });

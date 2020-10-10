@@ -15,11 +15,18 @@ ConfigParser::ConfigParser(const std::string& filename, IFileReader& file_reader
 
 void ConfigParser::loadFile(const std::string& filename)
 {
+    std::string parent_file = "";
+    if (!m_filename_stack.empty())
+    {
+        parent_file = m_filename_stack.back();
+    }
+    m_filename_stack.push_back(filename);
     auto action = [this](const char* buffer)
     {
         ini_parse_string(buffer, ConfigParser::valueHandler, this);
     };
-    m_file_reader.readFile(filename, action);
+    m_file_reader.readFile(filename, parent_file, action);
+    m_filename_stack.pop_back();
 }
 
 void ConfigParser::parseValue(const std::string& section, const std::string& name, const std::string& value)
