@@ -14,6 +14,7 @@ target_sources(klipper_dash_visualizer_lib PRIVATE
   src/server/pin_resolver.cpp
   src/server/config_parser.cpp
   src/server/cartesian.cpp
+  src/server/stepper.cpp
 )
 target_include_directories(klipper_dash_visualizer_lib PUBLIC src/server/)
 

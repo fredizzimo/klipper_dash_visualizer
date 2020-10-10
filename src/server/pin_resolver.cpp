@@ -1,4 +1,5 @@
 #include "pin_resolver.hpp"
+#include "parser_error.hpp"
 #include <algorithm>
 #include <cctype>
 #include <nlohmann/json.hpp>
@@ -209,25 +210,32 @@ PinResolver::PinResolver(const json& config)
     }
 }
 
-unsigned PinResolver::getPin(const std::string& pin)
+unsigned PinResolver::getPin(const std::string& pin) const
 {
     auto info = parsePin(pin);
-    return m_name_to_num.at(info.name);
+    try
+    {
+        return m_name_to_num.at(info.name);
+    }
+    catch (std::out_of_range)
+    {
+        throw ParserError("Pin %s is not valid for the current MCU", pin.c_str());
+    }
 }
 
-bool PinResolver::isInverted(const std::string& pin)
+bool PinResolver::isInverted(const std::string& pin) const
 {
     auto info = parsePin(pin);
     return info.isInverted;
 }
 
-bool PinResolver::hasPullUp(const std::string& pin)
+bool PinResolver::hasPullUp(const std::string& pin) const
 {
     auto info = parsePin(pin);
     return info.hasPullUp;
 }
 
-bool PinResolver::hasPullDown(const std::string& pin)
+bool PinResolver::hasPullDown(const std::string& pin) const
 {
     auto info = parsePin(pin);
     return info.hasPullDown;

@@ -59,11 +59,15 @@ void Parser::loadConfig(const std::string& filename)
     std::string kinematics = parser.get<std::string>("printer", "kinematics");
     if (kinematics == "cartesian")
     {
-        m_kinematics = std::make_unique<Cartesian>();
+        m_kinematics = std::make_unique<Cartesian>(parser, *m_pin_resolver);
     }
     else
     {
         throw ParserError("Only cartesian kinematics supported at the moment");
+    }
+    for (size_t i=0;i<m_kinematics->getNumSteppers();i++)
+    {
+        m_unresolved_steppers.push_back(&m_kinematics->getStepper(i));
     }
 }
 

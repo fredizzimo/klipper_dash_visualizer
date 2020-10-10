@@ -6,6 +6,7 @@
 #include "pin_resolver.hpp"
 
 class Kinematics;
+class Stepper;
 
 class Parser
 {
@@ -40,4 +41,6 @@ private:
     std::unique_ptr<PinResolver> m_pin_resolver;
 
     std::unique_ptr<Kinematics> m_kinematics;
+
+    std::vector<Stepper*> m_unresolved_steppers;
 };
