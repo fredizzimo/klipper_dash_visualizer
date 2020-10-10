@@ -53,5 +53,6 @@ private:
 
     std::unique_ptr<Kinematics> m_kinematics;
 
-    std::vector<Stepper*> m_unresolved_steppers;
+    std::vector<Stepper*> m_steppers_by_pin;
+    std::vector<Stepper*> m_steppers_by_oid;
 };

@@ -68,7 +68,12 @@ void Parser::loadConfig(const std::string& filename)
     }
     for (size_t i=0;i<m_kinematics->getNumSteppers();i++)
     {
-        m_unresolved_steppers.push_back(&m_kinematics->getStepper(i));
+        Stepper& stepper = m_kinematics->getStepper(i);
+        if (m_steppers_by_pin.size() <= stepper.getPin())
+        {
+            m_steppers_by_pin.resize(stepper.getPin() + 1);
+        }
+        m_steppers_by_pin[stepper.getPin()] = &stepper;
     }
 }
 
@@ -496,12 +501,13 @@ void Parser::registerCommandHandler(const std::string command_name, void (Parser
         }
         auto f = [this, func](const uint8_t*& buffer)
         {
-            // The evaluation order of function arguments is not guaranteed, so use a temporary tuple
-            std::tuple<Args...> args{static_cast<Args>(decodeVLQ(buffer))...};
             auto caller = [this, func](Args... a)
             {
                 (this->*func)(a...);
             };
+
+            // The evaluation order of function arguments is not guaranteed, so use a temporary tuple
+            std::tuple<Args...> args{static_cast<Args>(decodeVLQ(buffer))...};
             std::apply(caller, args);
         };
         m_command_handlers[command] = f;
@@ -514,4 +520,16 @@ void Parser::registerCommandHandler(const std::string command_name, void (Parser
 
 void Parser::configStepper(uint8_t oid, uint8_t step_pin, uint8_t dir_pin, uint32_t min_stop_interval, uint8_t invert_step)
 {
+    if (step_pin < m_steppers_by_pin.size())
+    {
+        Stepper* stepper = m_steppers_by_pin[step_pin];
+        if (stepper)
+        {
+            if (m_steppers_by_oid.size() <= oid)
+            {
+                m_steppers_by_oid.resize(oid+1);
+            }
+            m_steppers_by_oid[oid] = stepper;
+        }
+    }
 }
