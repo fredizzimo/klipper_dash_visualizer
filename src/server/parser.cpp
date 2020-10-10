@@ -45,6 +45,7 @@ Parser::Parser(const std::string& config, const std::string& dictionary)
 {
     loadDict(dictionary);
     loadConfig(config);
+    registerCommandHandler("config_stepper", &Parser::configStepper);
 }
 
 Parser::~Parser()
@@ -357,7 +358,7 @@ void Parser::parse(const std::string& filename)
             message += MESSAGE_HEADER_SIZE;
             while (message < end)
             {
-                #if 0
+                #if 1
                     readCommand(message);
                 #else
                     printCommand(message);
@@ -421,17 +422,96 @@ void Parser::printCommand(const uint8_t*& buffer)
 void Parser::readCommand(const uint8_t*& buffer)
 {
     uint32_t command_id = decodeVLQ(buffer);
-    const auto& command = m_commands.at(command_id);
-    for (auto arg: command)
+    auto handler = m_command_handlers.find(command_id);
+    if (handler != m_command_handlers.end())
     {
-        if (arg < ArgumentType::NumberTypesEnd)
+        handler->second(buffer);
+    }
+    else
+    {
+        const auto& command = m_commands.at(command_id);
+        for (auto arg: command)
         {
-            decodeVLQ(buffer);
-        }
-        else
-        {
-            uint8_t size = *buffer;
-            buffer += size + 1;
+            if (arg < ArgumentType::NumberTypesEnd)
+            {
+                decodeVLQ(buffer);
+            }
+            else
+            {
+                uint8_t size = *buffer;
+                buffer += size + 1;
+            }
         }
     }
+}
+
+template<typename T>
+struct Parser::RuntimeType
+{
+    static constexpr Parser::ArgumentType type = Parser::ArgumentType::Undefined;
+};
+template<>
+struct Parser::RuntimeType<uint32_t>
+{
+    static constexpr Parser::ArgumentType type = Parser::ArgumentType::Uint32;
+};
+template<>
+struct Parser::RuntimeType<int32_t>
+{
+    static constexpr Parser::ArgumentType type = Parser::ArgumentType::Int32;
+};
+template<>
+struct Parser::RuntimeType<uint16_t>
+{
+    static constexpr Parser::ArgumentType type = Parser::ArgumentType::Uint16;
+};
+template<>
+struct Parser::RuntimeType<int16_t>
+{
+    static constexpr Parser::ArgumentType type = Parser::ArgumentType::Int16;
+};
+template<>
+struct Parser::RuntimeType<uint8_t>
+{
+    static constexpr Parser::ArgumentType type = Parser::ArgumentType::Byte;
+};
+// String types not defined out of lazyness
+// They probably need to use std::string_view, since they are not null terminated
+
+template<typename... Args>
+void Parser::registerCommandHandler(const std::string command_name, void (Parser::*func)(Args...))
+{
+    try
+    {
+        uint8_t command = m_command_name_to_id.at(command_name);
+        const auto& args = m_commands.at(command);
+        if (args.size() != sizeof...(Args))
+        {
+            throw ParserError("Incompatible dictionary file, command %s has the wrong number of arguments", command_name.c_str());
+        }
+        std::array<ArgumentType, sizeof...(Args)> runtime_argument_types = { RuntimeType<Args>::type... };
+        if (!std::equal(args.begin(), args.end(), runtime_argument_types.begin()))
+        {
+            throw ParserError("Incompatible dictionary file, command %s has the wrong type of arguments", command_name.c_str());
+        }
+        auto f = [this, func](const uint8_t*& buffer)
+        {
+            // The evaluation order of function arguments is not guaranteed, so use a temporary tuple
+            std::tuple<Args...> args{static_cast<Args>(decodeVLQ(buffer))...};
+            auto caller = [this, func](Args... a)
+            {
+                (this->*func)(a...);
+            };
+            std::apply(caller, args);
+        };
+        m_command_handlers[command] = f;
+    }
+    catch(std::out_of_range)
+    {
+        throw ParserError("Incompatible dictionary file, command %s not found", command_name.c_str());
+    }
+}
+
+void Parser::configStepper(uint8_t oid, uint8_t step_pin, uint8_t dir_pin, uint32_t min_stop_interval, uint8_t invert_step)
+{
 }
