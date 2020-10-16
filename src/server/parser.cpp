@@ -356,14 +356,15 @@ void Parser::parse(const std::string& filename)
         while (true)
         {
             // 8 bytes for timestamp
-            auto timestamp = reader.read<double>();
+            auto timestamp = reader.read<uint64_t>();
+            std::cout << timestamp << std::endl;
             auto [msg_len, message] = reader.readMessage();
             validateMessage(msg_len, message);
             auto end = message + msg_len - MESSAGE_TRAILER_SIZE;
             message += MESSAGE_HEADER_SIZE;
             while (message < end)
             {
-                #if 1
+                #if 0
                     readCommand(message);
                 #else
                     printCommand(message);

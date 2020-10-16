@@ -37,6 +37,7 @@ add_subdirectory(external/gtest)
 add_executable(test_server
   src/server/test/test_pin_resolver.cpp
   src/server/test/test_config_parser.cpp
+  src/server/test/test_stepper.cpp
 )
 target_link_libraries(test_server gtest_main gmock klipper_dash_visualizer_lib)
 add_test(NAME test COMMAND test_server)
