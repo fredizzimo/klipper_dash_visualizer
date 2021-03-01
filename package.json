@@ -92,7 +92,7 @@
     "sinon": "^9.0.2",
     "style-loader": "^0.23.1",
     "styled-jsx": "^3.2.1",
-    "three": "0.115.0",
+    "three": "0.125.0",
     "tinycolor2": "^1.4.1",
     "ts-jest": "^26.1.1",
     "ts-loader": "^7.0.0",
